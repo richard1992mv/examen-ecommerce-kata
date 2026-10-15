@@ -25,6 +25,9 @@
         <springdoc.version>2.3.0</springdoc.version>
         <app.time-zone>America/Bogota</app.time-zone>
         <database.scripts.dir>${project.basedir}/../../database</database.scripts.dir>
+        <!-- Valor por defecto de argLine: surefire usa @{argLine} (lo completaría JaCoCo). Sin él, la JVM
+             recibe el texto literal "@{argLine}" y falla con "could not open {argLine}". -->
+        <argLine></argLine>
     </properties>
 
     <dependencies>
