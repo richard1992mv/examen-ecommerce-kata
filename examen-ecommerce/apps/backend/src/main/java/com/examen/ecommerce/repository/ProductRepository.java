@@ -4,36 +4,23 @@ import com.examen.ecommerce.entity.Product;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-public interface ProductRepository extends JpaRepository<Product, Integer>, JpaSpecificationExecutor<Product> {
+public interface ProductRepository extends JpaRepository<Product, Integer> {
 
-    /** Listado paginado con la categoría en la misma consulta (sin N+1). */
-    @Override
+    /** HU1: catálogo completo con su categoría en una sola consulta (sin N+1). */
     @EntityGraph(attributePaths = "category")
-    Page<Product> findAll(Specification<Product> spec, Pageable pageable);
+    List<Product> findAllByOrderByIdAsc();
 
-    @EntityGraph(attributePaths = "category")
-    Optional<Product> findWithCategoryById(Integer id);
-
-    /** Checkout/quote: productos + categoría en UNA sola consulta. */
+    /** Quote/checkout: productos del carrito + categoría en una sola consulta. */
     @Query("select p from Product p join fetch p.category where p.id in :ids")
     List<Product> findAllWithCategoryByIdIn(@Param("ids") Collection<Integer> ids);
 
-    boolean existsByCategoryId(Integer categoryId);
-
-    /**
-     * UPDATE atómico: la condición stock >= :quantity evita sobreventa bajo concurrencia.
-     * Devuelve las filas afectadas (0 = stock insuficiente).
-     */
+    /** UPDATE atómico: stock >= :quantity evita sobreventa. Devuelve filas afectadas (0 = sin stock). */
     @Modifying(flushAutomatically = true)
     @Query("update Product p set p.stock = p.stock - :quantity where p.id = :id and p.stock >= :quantity")
     int decrementStock(@Param("id") Integer id, @Param("quantity") int quantity);

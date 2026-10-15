@@ -23,10 +23,6 @@
         <java.version>17</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <springdoc.version>2.3.0</springdoc.version>
-        <jacoco.version>0.8.12</jacoco.version>
-        <jacoco.minimum.coverage>0.80</jacoco.minimum.coverage>
-        <!-- Testcontainers < 1.21.4 no es compatible con Docker Engine 29 (API mínima 1.44). -->
-        <testcontainers.version>1.21.4</testcontainers.version>
         <app.time-zone>America/Bogota</app.time-zone>
         <database.scripts.dir>${project.basedir}/../../database</database.scripts.dir>
     </properties>
@@ -43,10 +39,6 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-validation</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
         <dependency>
             <groupId>com.mysql</groupId>
@@ -71,11 +63,6 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-testcontainers</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>junit-jupiter</artifactId>
             <scope>test</scope>
@@ -93,14 +80,6 @@
         <testResources>
             <testResource>
                 <directory>src/test/resources</directory>
-            </testResource>
-            <testResource>
-                <directory>${database.scripts.dir}</directory>
-                <targetPath>db</targetPath>
-                <includes>
-                    <include>01_schema.sql</include>
-                    <include>02_seed_data.sql</include>
-                </includes>
             </testResource>
         </testResources>
 
@@ -132,58 +111,6 @@
                         <include>**/*IT.java</include>
                     </includes>
                 </configuration>
-            </plugin>
-
-            <plugin>
-                <groupId>org.jacoco</groupId>
-                <artifactId>jacoco-maven-plugin</artifactId>
-                <version>${jacoco.version}</version>
-                <configuration>
-                    <excludes>
-                        <exclude>com/examen/ecommerce/EcommerceApplication.class</exclude>
-                    </excludes>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>prepare-agent</id>
-                        <goals>
-                            <goal>prepare-agent</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>report</id>
-                        <phase>verify</phase>
-                        <goals>
-                            <goal>report</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>check</id>
-                        <phase>verify</phase>
-                        <goals>
-                            <goal>check</goal>
-                        </goals>
-                        <configuration>
-                            <rules>
-                                <rule>
-                                    <element>BUNDLE</element>
-                                    <limits>
-                                        <limit>
-                                            <counter>LINE</counter>
-                                            <value>COVEREDRATIO</value>
-                                            <minimum>${jacoco.minimum.coverage}</minimum>
-                                        </limit>
-                                        <limit>
-                                            <counter>INSTRUCTION</counter>
-                                            <value>COVEREDRATIO</value>
-                                            <minimum>${jacoco.minimum.coverage}</minimum>
-                                        </limit>
-                                    </limits>
-                                </rule>
-                            </rules>
-                        </configuration>
-                    </execution>
-                </executions>
             </plugin>
         </plugins>
     </build>

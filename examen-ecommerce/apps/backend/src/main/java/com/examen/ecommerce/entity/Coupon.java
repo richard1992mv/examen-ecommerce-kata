@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-/** Tabla coupons. Vigencia inclusiva en ambos extremos. */
+/** Tabla coupons (solo lectura). Vigencia inclusiva en ambos extremos. */
 @Entity
 @Table(name = "coupons")
 public class Coupon extends AuditableEntity {
@@ -25,26 +25,12 @@ public class Coupon extends AuditableEntity {
     @Column(name = "valid_until", nullable = false)
     private LocalDateTime validUntil;
 
-    /** TINYINT(1) UNSIGNED → boolean (ver docs/arquitectura.md, validate y UNSIGNED). */
+    /** TINYINT(1) UNSIGNED → boolean (necesario para ddl-auto=validate). */
     @JdbcTypeCode(SqlTypes.TINYINT)
     @Column(name = "is_active", nullable = false)
     private boolean active;
 
     protected Coupon() {
-    }
-
-    public Coupon(String code, BigDecimal discountPct, LocalDateTime validFrom, LocalDateTime validUntil,
-                  boolean active) {
-        update(code, discountPct, validFrom, validUntil, active);
-    }
-
-    public final void update(String newCode, BigDecimal newDiscountPct, LocalDateTime newValidFrom,
-                             LocalDateTime newValidUntil, boolean newActive) {
-        this.code = newCode;
-        this.discountPct = newDiscountPct;
-        this.validFrom = newValidFrom;
-        this.validUntil = newValidUntil;
-        this.active = newActive;
     }
 
     /** valid_from ≤ instante ≤ valid_until (inclusive). */
@@ -58,14 +44,6 @@ public class Coupon extends AuditableEntity {
 
     public BigDecimal getDiscountPct() {
         return discountPct;
-    }
-
-    public LocalDateTime getValidFrom() {
-        return validFrom;
-    }
-
-    public LocalDateTime getValidUntil() {
-        return validUntil;
     }
 
     public boolean isActive() {

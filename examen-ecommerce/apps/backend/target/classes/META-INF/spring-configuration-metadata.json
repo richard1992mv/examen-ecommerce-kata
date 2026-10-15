@@ -1,23 +1,6 @@
 {
   "groups": [
     {
-      "name": "app",
-      "type": "com.examen.ecommerce.config.AppProperties",
-      "sourceType": "com.examen.ecommerce.config.AppProperties"
-    },
-    {
-      "name": "app.clock",
-      "type": "com.examen.ecommerce.config.AppProperties$ClockSettings",
-      "sourceType": "com.examen.ecommerce.config.AppProperties",
-      "sourceMethod": "public com.examen.ecommerce.config.AppProperties.ClockSettings clock() "
-    },
-    {
-      "name": "app.cors",
-      "type": "com.examen.ecommerce.config.AppProperties$Cors",
-      "sourceType": "com.examen.ecommerce.config.AppProperties",
-      "sourceMethod": "public com.examen.ecommerce.config.AppProperties.Cors cors() "
-    },
-    {
       "name": "discount",
       "type": "com.examen.ecommerce.config.DiscountProperties",
       "sourceType": "com.examen.ecommerce.config.DiscountProperties"
@@ -35,26 +18,6 @@
     }
   ],
   "properties": [
-    {
-      "name": "app.clock.fixed-instant",
-      "type": "java.lang.String",
-      "sourceType": "com.examen.ecommerce.config.AppProperties$ClockSettings"
-    },
-    {
-      "name": "app.cors.allowed-methods",
-      "type": "java.util.List<java.lang.String>",
-      "sourceType": "com.examen.ecommerce.config.AppProperties$Cors"
-    },
-    {
-      "name": "app.cors.allowed-origins",
-      "type": "java.util.List<java.lang.String>",
-      "sourceType": "com.examen.ecommerce.config.AppProperties$Cors"
-    },
-    {
-      "name": "app.time-zone",
-      "type": "java.lang.String",
-      "sourceType": "com.examen.ecommerce.config.AppProperties"
-    },
     {
       "name": "discount.cap-pct",
       "type": "java.math.BigDecimal",

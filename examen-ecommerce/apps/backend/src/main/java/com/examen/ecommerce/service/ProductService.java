@@ -1,19 +1,23 @@
 package com.examen.ecommerce.service;
 
-import com.examen.ecommerce.dto.request.ProductRequest;
-import com.examen.ecommerce.dto.response.PageResponse;
 import com.examen.ecommerce.dto.response.ProductResponse;
-import org.springframework.data.domain.Pageable;
+import com.examen.ecommerce.repository.ProductRepository;
+import java.util.List;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-public interface ProductService {
+/** HU1: catálogo de productos pre-configurados. */
+@Service
+public class ProductService {
 
-    PageResponse<ProductResponse> findAll(Integer categoryId, String name, Pageable pageable);
+    private final ProductRepository productRepository;
 
-    ProductResponse findById(Integer id);
+    public ProductService(ProductRepository productRepository) {
+        this.productRepository = productRepository;
+    }
 
-    ProductResponse create(ProductRequest request);
-
-    ProductResponse update(Integer id, ProductRequest request);
-
-    void delete(Integer id);
+    @Transactional(readOnly = true)
+    public List<ProductResponse> findAll() {
+        return productRepository.findAllByOrderByIdAsc().stream().map(ProductResponse::from).toList();
+    }
 }

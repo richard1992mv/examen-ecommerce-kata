@@ -29,17 +29,6 @@ public class Product extends AuditableEntity {
     protected Product() {
     }
 
-    public Product(String name, BigDecimal unitPrice, Category category, Integer stock) {
-        update(name, unitPrice, category, stock);
-    }
-
-    public final void update(String newName, BigDecimal newUnitPrice, Category newCategory, Integer newStock) {
-        this.name = newName;
-        this.unitPrice = newUnitPrice;
-        this.category = newCategory;
-        this.stock = newStock;
-    }
-
     public String getName() {
         return name;
     }

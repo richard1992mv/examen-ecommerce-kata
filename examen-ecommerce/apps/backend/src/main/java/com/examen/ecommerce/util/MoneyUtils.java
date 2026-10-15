@@ -5,9 +5,8 @@ import java.math.RoundingMode;
 import java.util.Collection;
 
 /**
- * ÚNICO lugar con aritmética monetaria y redondeo (DRY).
- * Regla: HALF_UP a 2 decimales al final de CADA paso, igual que 02_seed_data.sql.
- * Nunca se usa double/float.
+ * Único lugar con aritmética monetaria y redondeo.
+ * Regla: HALF_UP a 2 decimales al final de cada paso, igual que 02_seed_data.sql. Nunca double/float.
  */
 public final class MoneyUtils {
 
@@ -15,7 +14,6 @@ public final class MoneyUtils {
     public static final RoundingMode ROUNDING = RoundingMode.HALF_UP;
     public static final BigDecimal ZERO = BigDecimal.ZERO.setScale(SCALE, ROUNDING);
     public static final String DEFAULT_CURRENCY = "USD";
-
     private static final BigDecimal ONE_HUNDRED = BigDecimal.valueOf(100);
 
     private MoneyUtils() {
@@ -30,7 +28,7 @@ public final class MoneyUtils {
         return round(unitPrice.multiply(BigDecimal.valueOf(quantity)));
     }
 
-    /** amount × pct / 100 con un único redondeo HALF_UP; nunca negativo. */
+    /** amount × pct / 100 con un único redondeo HALF_UP; 0 si alguno no es positivo. */
     public static BigDecimal percentOf(BigDecimal amount, BigDecimal pct) {
         if (!isPositive(amount) || !isPositive(pct)) {
             return ZERO;
@@ -46,10 +44,6 @@ public final class MoneyUtils {
         return part.multiply(ONE_HUNDRED).divide(whole, SCALE, ROUNDING);
     }
 
-    public static BigDecimal add(BigDecimal left, BigDecimal right) {
-        return round(left.add(right));
-    }
-
     public static BigDecimal subtract(BigDecimal minuend, BigDecimal subtrahend) {
         return round(minuend.subtract(subtrahend));
     }
@@ -58,15 +52,11 @@ public final class MoneyUtils {
         return round(values.stream().reduce(BigDecimal.ZERO, BigDecimal::add));
     }
 
-    public static BigDecimal nonNegative(BigDecimal value) {
-        return isPositive(value) ? round(value) : ZERO;
-    }
-
-    public static boolean isPositive(BigDecimal value) {
-        return value != null && value.signum() > 0;
-    }
-
     public static boolean isGreaterThan(BigDecimal left, BigDecimal right) {
         return left.compareTo(right) > 0;
+    }
+
+    private static boolean isPositive(BigDecimal value) {
+        return value != null && value.signum() > 0;
     }
 }

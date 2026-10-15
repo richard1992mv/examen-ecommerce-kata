@@ -5,7 +5,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
 
-/** Tabla categories. */
+/** Tabla categories (solo lectura). */
 @Entity
 @Table(name = "categories")
 public class Category extends AuditableEntity {
@@ -17,15 +17,6 @@ public class Category extends AuditableEntity {
     private BigDecimal discountPct;
 
     protected Category() {
-    }
-
-    public Category(String name, BigDecimal discountPct) {
-        update(name, discountPct);
-    }
-
-    public final void update(String newName, BigDecimal newDiscountPct) {
-        this.name = newName;
-        this.discountPct = newDiscountPct;
     }
 
     public String getName() {

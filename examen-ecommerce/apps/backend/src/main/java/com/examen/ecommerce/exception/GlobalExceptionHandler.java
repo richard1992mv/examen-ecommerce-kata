@@ -1,67 +1,42 @@
 package com.examen.ecommerce.exception;
 
-import jakarta.validation.ConstraintViolationException;
 import java.net.URI;
 import java.util.List;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.data.mapping.PropertyReferenceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.converter.HttpMessageNotReadableException;
-import org.springframework.validation.FieldError;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.method.annotation.HandlerMethodValidationException;
-import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
-/**
- * ÚNICO lugar donde se construye Problem Details (RFC 9457). Nunca expone stack trace ni SQL.
- */
+/** Único lugar donde se construye Problem Details (RFC 9457). Nunca expone stack trace ni SQL. */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     private static final Logger LOG = LoggerFactory.getLogger(GlobalExceptionHandler.class);
     private static final String TYPE_PREFIX = "urn:problem-type:";
-    private static final String ERRORS = "errors";
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ProblemDetail handleBodyValidation(MethodArgumentNotValidException ex) {
+    public ProblemDetail handleValidation(MethodArgumentNotValidException ex) {
         Stream<FieldViolation> fields = ex.getBindingResult().getFieldErrors().stream()
-                .map(error -> new FieldViolation(error.getField(), messageOf(error)));
+                .map(error -> new FieldViolation(error.getField(), error.getDefaultMessage()));
         Stream<FieldViolation> globals = ex.getBindingResult().getGlobalErrors().stream()
                 .map(error -> new FieldViolation(error.getObjectName(), error.getDefaultMessage()));
-        return validationProblem(Stream.concat(fields, globals).toList());
+        List<FieldViolation> violations = Stream.concat(fields, globals).toList();
+        ProblemDetail problem = problem(HttpStatus.BAD_REQUEST, "validation-error", ErrorMessages.VALIDATION_FAILED);
+        problem.setProperty("errors", violations);
+        return problem;
     }
 
-    @ExceptionHandler(HandlerMethodValidationException.class)
-    public ProblemDetail handleParameterValidation(HandlerMethodValidationException ex) {
-        List<FieldViolation> violations = ex.getAllValidationResults().stream()
-                .flatMap(result -> result.getResolvableErrors().stream()
-                        .map(error -> new FieldViolation(result.getMethodParameter().getParameterName(),
-                                error.getDefaultMessage())))
-                .toList();
-        return validationProblem(violations);
-    }
-
-    @ExceptionHandler(ConstraintViolationException.class)
-    public ProblemDetail handleConstraintViolation(ConstraintViolationException ex) {
-        List<FieldViolation> violations = ex.getConstraintViolations().stream()
-                .map(violation -> new FieldViolation(violation.getPropertyPath().toString(), violation.getMessage()))
-                .toList();
-        return validationProblem(violations);
-    }
-
-    @ExceptionHandler({HttpMessageNotReadableException.class, MethodArgumentTypeMismatchException.class,
-        MissingServletRequestParameterException.class, PropertyReferenceException.class})
-    public ProblemDetail handleMalformedRequest(Exception ex) {
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ProblemDetail handleMalformed(HttpMessageNotReadableException ex) {
         return problem(HttpStatus.BAD_REQUEST, "malformed-request", ErrorMessages.MALFORMED_REQUEST);
     }
 
@@ -99,11 +74,6 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
-    @ExceptionHandler(ResourceConflictException.class)
-    public ProblemDetail handleConflict(ResourceConflictException ex) {
-        return problem(HttpStatus.CONFLICT, "resource-conflict", ex.getMessage());
-    }
-
     @ExceptionHandler(OrderNumberGenerationException.class)
     public ProblemDetail handleOrderNumber(OrderNumberGenerationException ex) {
         return problem(HttpStatus.CONFLICT, "order-number-conflict", ex.getMessage());
@@ -128,20 +98,10 @@ public class GlobalExceptionHandler {
         return problem(HttpStatus.INTERNAL_SERVER_ERROR, "internal-error", ErrorMessages.INTERNAL_ERROR);
     }
 
-    private ProblemDetail validationProblem(List<FieldViolation> violations) {
-        ProblemDetail problem = problem(HttpStatus.BAD_REQUEST, "validation-error", ErrorMessages.VALIDATION_FAILED);
-        problem.setProperty(ERRORS, violations);
-        return problem;
-    }
-
     private static ProblemDetail problem(HttpStatus status, String type, String detail) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(status, detail);
         problem.setTitle(status.getReasonPhrase());
         problem.setType(URI.create(TYPE_PREFIX + type));
         return problem;
-    }
-
-    private static String messageOf(FieldError error) {
-        return error.getDefaultMessage();
     }
 }
