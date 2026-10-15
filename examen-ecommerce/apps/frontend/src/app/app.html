@@ -1,0 +1,28 @@
+<header>
+  <h1>Carrito de compras</h1>
+</header>
+
+@if (orders.lastOrder(); as order) {
+  <app-order-confirmation [order]="order" (closed)="orders.dismissConfirmation()" />
+}
+
+<main class="layout">
+  <section>
+    <app-product-list />
+  </section>
+
+  <aside>
+    <app-cart />
+
+    <h2>Descuentos</h2>
+    <app-coupon-form />
+
+    @if (cart.quoteLoading()) {
+      <p>Calculando descuentos…</p>
+    } @else if (cart.quote(); as quote) {
+      <app-discount-summary [data]="quote" />
+    } @else if (!cart.isEmpty() && !cart.quoteError()) {
+      <p class="hint">Pulse «Aplicar» (con o sin cupón) para ver el desglose de descuentos.</p>
+    }
+  </aside>
+</main>

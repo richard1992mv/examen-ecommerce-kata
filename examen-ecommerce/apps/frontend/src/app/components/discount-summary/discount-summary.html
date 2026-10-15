@@ -1,0 +1,51 @@
+@let d = data();
+
+@if (d.capApplied) {
+  <app-cap-alert [message]="d.message" />
+}
+
+<table class="summary">
+  <tbody>
+    <tr><th>Subtotal original</th><td>{{ d.subtotalOriginal | currency: d.currency }}</td></tr>
+    <tr><th>Descuento de Categoría</th><td>- {{ d.categoryDiscount | currency: d.currency }}</td></tr>
+    <tr><th>Descuento por Volumen</th><td>- {{ d.volumeDiscount | currency: d.currency }}</td></tr>
+    <tr>
+      <th>Descuento por Cupón @if (d.couponCode) { ({{ d.couponCode }}) }</th>
+      <td>- {{ d.couponDiscount | currency: d.currency }}</td>
+    </tr>
+    @if (d.capAdjustment > 0) {
+      <tr>
+        <th>Ajuste por tope ({{ d.discountCapPct | number: '1.0-2' }}%)</th>
+        <td>+ {{ d.capAdjustment | currency: d.currency }}</td>
+      </tr>
+    }
+    <tr><th>% de descuento efectivo</th><td>{{ d.effectiveDiscountPct | number: '1.2-2' }}%</td></tr>
+    <tr><th>Ahorro total</th><td>{{ d.discountTotal | currency: d.currency }}</td></tr>
+    <tr class="total"><th>Total a pagar</th><td>{{ d.total | currency: d.currency }}</td></tr>
+  </tbody>
+</table>
+
+<details>
+  <summary>Detalle por línea ({{ d.items.length }})</summary>
+  <table>
+    <thead>
+      <tr>
+        <th>Producto</th><th>Categoría</th><th>Precio</th><th>Cant.</th>
+        <th>Subtotal</th><th>Dto. categoría</th><th>Total línea</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (line of d.items; track line.productId) {
+        <tr>
+          <td>{{ line.productName }}</td>
+          <td>{{ line.categoryName }}</td>
+          <td>{{ line.unitPrice | currency: d.currency }}</td>
+          <td>{{ line.quantity }}</td>
+          <td>{{ line.lineSubtotal | currency: d.currency }}</td>
+          <td>- {{ line.categoryDiscount | currency: d.currency }}</td>
+          <td>{{ line.lineTotal | currency: d.currency }}</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</details>

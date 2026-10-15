@@ -1,0 +1,33 @@
+<h2>Productos</h2>
+
+@if (productService.loading()) {
+  <p>Cargando productos…</p>
+}
+@if (productService.error(); as error) {
+  <p class="error">{{ error }} <button type="button" (click)="productService.load()">Reintentar</button></p>
+}
+
+<table>
+  <thead>
+    <tr><th>ID</th><th>Nombre</th><th>Categoría</th><th>Precio</th><th>Stock</th><th>En carrito</th><th></th></tr>
+  </thead>
+  <tbody>
+    @for (p of productService.products(); track p.id) {
+      <tr [class.muted]="p.stock === 0">
+        <td>{{ p.id }}</td>
+        <td>{{ p.name }}</td>
+        <td>{{ p.categoryName }}</td>
+        <td>{{ p.unitPrice | currency: currency }}</td>
+        <td>{{ p.stock === 0 ? 'Agotado' : p.stock }}</td>
+        <td>{{ cart.quantityOf(p.id) || '' }}</td>
+        <td>
+          <button type="button" (click)="cart.add(p)" [disabled]="!canAdd(p)">Agregar</button>
+        </td>
+      </tr>
+    } @empty {
+      @if (!productService.loading()) {
+        <tr><td colspan="7">No hay productos.</td></tr>
+      }
+    }
+  </tbody>
+</table>

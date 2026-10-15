@@ -1,0 +1,19 @@
+/* Estilos mínimos: se trabajarán después. */
+body { font-family: system-ui, sans-serif; margin: 1rem; color: #222; }
+table { border-collapse: collapse; width: 100%; margin-bottom: .75rem; }
+th, td { border-bottom: 1px solid #ddd; padding: .35rem .5rem; text-align: left; }
+.summary td { text-align: right; }
+.summary .total { font-weight: bold; font-size: 1.1em; }
+.qty input { width: 4rem; }
+.muted { color: #999; }
+.error { color: #b00020; }
+.ok { color: #1b5e20; }
+.hint { color: #666; font-style: italic; }
+.checkout { margin-top: 1rem; }
+button.primary { font-weight: bold; padding: .5rem 1rem; }
+.coupon { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; margin-bottom: .5rem; }
+.cap-alert {
+  background: #fff3cd; border: 2px solid #f0ad4e; border-left-width: 8px;
+  padding: .75rem 1rem; margin: .5rem 0; font-weight: bold;
+}
+.confirmation { border: 2px solid #2e7d32; padding: 1rem; margin-bottom: 1rem; background: #f1f8f1; }

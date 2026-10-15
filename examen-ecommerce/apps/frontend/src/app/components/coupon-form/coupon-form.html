@@ -1,0 +1,22 @@
+<form class="coupon" (submit)="$event.preventDefault(); apply()">
+  <label for="coupon">Cupón</label>
+  <input
+    id="coupon"
+    type="text"
+    maxlength="50"
+    placeholder="Ej. WELCOME2026 (opcional)"
+    [value]="code()"
+    (input)="code.set($any($event.target).value)"
+  />
+  <button type="submit" [disabled]="cart.isEmpty() || cart.quoteLoading()">Aplicar</button>
+  @if (cart.couponCode()) {
+    <button type="button" (click)="removeCoupon()" [disabled]="cart.quoteLoading()">Quitar cupón</button>
+  }
+</form>
+
+@if (cart.couponCode() && cart.quote()) {
+  <p class="ok">Cupón aplicado: <strong>{{ cart.couponCode() }}</strong></p>
+}
+@if (cart.quoteError(); as error) {
+  <p class="error">{{ error }}</p>
+}

@@ -1,0 +1,57 @@
+<h2>Carrito ({{ cart.totalUnits() }})</h2>
+
+@if (cart.isEmpty()) {
+  <p>El carrito está vacío.</p>
+} @else {
+  <table>
+    <thead>
+      <tr><th>Producto</th><th>Precio</th><th>Cantidad</th><th>Subtotal</th><th></th></tr>
+    </thead>
+    <tbody>
+      @for (item of cart.items(); track item.product.id) {
+        <tr>
+          <td>{{ item.product.name }}</td>
+          <td>{{ item.product.unitPrice | currency: currency }}</td>
+          <td class="qty">
+            <button type="button" (click)="cart.decrement(item.product.id)" aria-label="Disminuir">−</button>
+            <input
+              type="number"
+              min="1"
+              [max]="item.product.stock"
+              [value]="item.quantity"
+              (change)="onQuantityInput(item, $event)"
+              aria-label="Cantidad"
+            />
+            <button
+              type="button"
+              (click)="cart.increment(item.product.id)"
+              [disabled]="item.quantity >= item.product.stock"
+              aria-label="Aumentar"
+            >+</button>
+            <small>máx. {{ item.product.stock }}</small>
+          </td>
+          <td>{{ item.product.unitPrice * item.quantity | currency: currency }}</td>
+          <td><button type="button" (click)="cart.remove(item.product.id)">Quitar</button></td>
+        </tr>
+      }
+    </tbody>
+  </table>
+
+  <p class="subtotal">Subtotal original: <strong>{{ cart.subtotalOriginal() | currency: currency }}</strong></p>
+
+  <button type="button" (click)="cart.clear()">Vaciar carrito</button>
+}
+
+<div class="checkout">
+  <button
+    type="button"
+    class="primary"
+    (click)="orders.checkout()"
+    [disabled]="cart.isEmpty() || orders.loading() || cart.quoteLoading()"
+  >
+    {{ orders.loading() ? 'Procesando…' : 'Finalizar compra' }}
+  </button>
+  @if (orders.error(); as error) {
+    <p class="error">No se pudo completar la compra: {{ error }}</p>
+  }
+</div>
