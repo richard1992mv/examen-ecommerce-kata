@@ -4,48 +4,84 @@
   <app-cap-alert [message]="d.message" />
 }
 
-<table class="summary">
+<table class="table table-sm align-middle mb-3">
   <tbody>
-    <tr><th>Subtotal original</th><td>{{ d.subtotalOriginal | currency: d.currency }}</td></tr>
-    <tr><th>Descuento de Categoría</th><td>- {{ d.categoryDiscount | currency: d.currency }}</td></tr>
-    <tr><th>Descuento por Volumen</th><td>- {{ d.volumeDiscount | currency: d.currency }}</td></tr>
     <tr>
-      <th>Descuento por Cupón @if (d.couponCode) { ({{ d.couponCode }}) }</th>
-      <td>- {{ d.couponDiscount | currency: d.currency }}</td>
+      <th scope="row" class="fw-normal">Subtotal original</th>
+      <td class="text-end">{{ d.subtotalOriginal | currency: d.currency }}</td>
+    </tr>
+    <tr>
+      <th scope="row" class="fw-normal">Descuento de Categoría</th>
+      <td class="text-end text-success">- {{ d.categoryDiscount | currency: d.currency }}</td>
+    </tr>
+    <tr>
+      <th scope="row" class="fw-normal">Descuento por Volumen</th>
+      <td class="text-end text-success">- {{ d.volumeDiscount | currency: d.currency }}</td>
+    </tr>
+    <tr>
+      <th scope="row" class="fw-normal">
+        Descuento por Cupón
+        @if (d.couponCode) {
+          <span class="badge text-bg-primary ms-1"><fa-icon [icon]="icons.faTag" class="me-1" />{{ d.couponCode }}</span>
+        }
+      </th>
+      <td class="text-end text-success">- {{ d.couponDiscount | currency: d.currency }}</td>
     </tr>
     @if (d.capAdjustment > 0) {
-      <tr>
-        <th>Ajuste por tope ({{ d.discountCapPct | number: '1.0-2' }}%)</th>
-        <td>+ {{ d.capAdjustment | currency: d.currency }}</td>
+      <tr class="table-warning">
+        <th scope="row" class="fw-normal">Ajuste por tope ({{ d.discountCapPct | number: '1.0-2' }}%)</th>
+        <td class="text-end">+ {{ d.capAdjustment | currency: d.currency }}</td>
       </tr>
     }
-    <tr><th>% de descuento efectivo</th><td>{{ d.effectiveDiscountPct | number: '1.2-2' }}%</td></tr>
-    <tr><th>Ahorro total</th><td>{{ d.discountTotal | currency: d.currency }}</td></tr>
-    <tr class="total"><th>Total a pagar</th><td>{{ d.total | currency: d.currency }}</td></tr>
+    <tr>
+      <th scope="row" class="fw-normal">% de descuento efectivo</th>
+      <td class="text-end">
+        <span class="badge text-bg-info">{{ d.effectiveDiscountPct | number: '1.2-2' }}%</span>
+      </td>
+    </tr>
+    <tr class="table-success">
+      <th scope="row">Ahorro total</th>
+      <td class="text-end fw-semibold">{{ d.discountTotal | currency: d.currency }}</td>
+    </tr>
+    <tr class="table-primary">
+      <th scope="row" class="fs-5">Total a pagar</th>
+      <td class="text-end fs-5 fw-bold">{{ d.total | currency: d.currency }}</td>
+    </tr>
   </tbody>
 </table>
 
-<details>
-  <summary>Detalle por línea ({{ d.items.length }})</summary>
-  <table>
-    <thead>
-      <tr>
-        <th>Producto</th><th>Categoría</th><th>Precio</th><th>Cant.</th>
-        <th>Subtotal</th><th>Dto. categoría</th><th>Total línea</th>
-      </tr>
-    </thead>
-    <tbody>
-      @for (line of d.items; track line.productId) {
+<details class="line-details border rounded">
+  <summary class="px-3 py-2 bg-light rounded fw-medium">
+    <fa-icon [icon]="icons.faListUl" class="me-2" />Detalle por línea
+    <span class="badge rounded-pill text-bg-secondary ms-1">{{ d.items.length }}</span>
+  </summary>
+  <div class="table-responsive">
+    <table class="table table-sm table-striped align-middle mb-0 small">
+      <thead class="table-light">
         <tr>
-          <td>{{ line.productName }}</td>
-          <td>{{ line.categoryName }}</td>
-          <td>{{ line.unitPrice | currency: d.currency }}</td>
-          <td>{{ line.quantity }}</td>
-          <td>{{ line.lineSubtotal | currency: d.currency }}</td>
-          <td>- {{ line.categoryDiscount | currency: d.currency }}</td>
-          <td>{{ line.lineTotal | currency: d.currency }}</td>
+          <th scope="col">Producto</th>
+          <th scope="col" class="text-end">Precio</th>
+          <th scope="col" class="text-center">Cant.</th>
+          <th scope="col" class="text-end">Subtotal</th>
+          <th scope="col" class="text-end">Dto. cat.</th>
+          <th scope="col" class="text-end">Total</th>
         </tr>
-      }
-    </tbody>
-  </table>
+      </thead>
+      <tbody>
+        @for (line of d.items; track line.productId) {
+          <tr>
+            <td>
+              {{ line.productName }}<br />
+              <span class="text-secondary">{{ line.categoryName }}</span>
+            </td>
+            <td class="text-end">{{ line.unitPrice | currency: d.currency }}</td>
+            <td class="text-center">{{ line.quantity }}</td>
+            <td class="text-end">{{ line.lineSubtotal | currency: d.currency }}</td>
+            <td class="text-end text-success">- {{ line.categoryDiscount | currency: d.currency }}</td>
+            <td class="text-end fw-medium">{{ line.lineTotal | currency: d.currency }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
 </details>

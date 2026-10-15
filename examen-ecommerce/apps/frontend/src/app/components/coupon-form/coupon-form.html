@@ -1,22 +1,44 @@
-<form class="coupon" (submit)="$event.preventDefault(); apply()">
-  <label for="coupon">Cupón</label>
-  <input
-    id="coupon"
-    type="text"
-    maxlength="50"
-    placeholder="Ej. WELCOME2026 (opcional)"
-    [value]="code()"
-    (input)="code.set($any($event.target).value)"
-  />
-  <button type="submit" [disabled]="cart.isEmpty() || cart.quoteLoading()">Aplicar</button>
-  @if (cart.couponCode()) {
-    <button type="button" (click)="removeCoupon()" [disabled]="cart.quoteLoading()">Quitar cupón</button>
-  }
+<form class="mb-3" (submit)="$event.preventDefault(); apply()">
+  <label for="coupon" class="form-label fw-medium">Cupón de descuento</label>
+  <div class="input-group">
+    <span class="input-group-text"><fa-icon [icon]="icons.faTicket" /></span>
+    <input
+      id="coupon"
+      type="text"
+      class="form-control"
+      maxlength="50"
+      placeholder="Ej. WELCOME2026 (opcional)"
+      [class.is-invalid]="!!cart.quoteError()"
+      [value]="code()"
+      (input)="code.set($any($event.target).value)"
+    />
+    <button type="submit" class="btn btn-primary" [disabled]="cart.isEmpty() || cart.quoteLoading()">
+      Aplicar
+    </button>
+    @if (cart.couponCode()) {
+      <button
+        type="button"
+        class="btn btn-outline-danger"
+        (click)="removeCoupon()"
+        [disabled]="cart.quoteLoading()"
+        title="Quitar cupón"
+        aria-label="Quitar cupón"
+      >
+        <fa-icon [icon]="icons.faXmark" />
+      </button>
+    }
+  </div>
 </form>
 
 @if (cart.couponCode() && cart.quote()) {
-  <p class="ok">Cupón aplicado: <strong>{{ cart.couponCode() }}</strong></p>
+  <div class="alert alert-success d-flex align-items-center gap-2 py-2" role="status">
+    <fa-icon [icon]="icons.faCircleCheck" />
+    <span>Cupón <strong>{{ cart.couponCode() }}</strong> aplicado correctamente.</span>
+  </div>
 }
 @if (cart.quoteError(); as error) {
-  <p class="error">{{ error }}</p>
+  <div class="alert alert-danger d-flex align-items-center gap-2 py-2" role="alert">
+    <fa-icon [icon]="icons.faCircleExclamation" />
+    <span>{{ error }}</span>
+  </div>
 }

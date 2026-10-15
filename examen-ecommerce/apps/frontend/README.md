@@ -1,6 +1,6 @@
 # Frontend · Carrito de compras (Angular 22)
 
-UI sencilla (sin librerías de UI) que consume el backend Spring Boot en `http://localhost:8080/api/v1`.
+UI con **Bootstrap 5.3** y **Font Awesome 7** (`@fortawesome/angular-fontawesome`) que consume el backend Spring Boot en `http://localhost:8080/api/v1`.
 
 ## Requisitos
 - Node.js **>= 22.22.3** o **>= 24.15** (exigido por Angular CLI 22)
@@ -25,6 +25,11 @@ La URL base se cambia en `src/environments/environment*.ts` (`apiUrl`).
 ```bash
 npm test -- --watch=false
 ```
+
+## Estilos e íconos
+- Bootstrap: solo CSS, cargado en `angular.json` → `styles` (`node_modules/bootstrap/dist/css/bootstrap.min.css`). No se usa el JS de Bootstrap.
+- Font Awesome: componente standalone `<fa-icon [icon]="...">`. Los íconos se importan de `src/app/icons.ts` (tree-shaking: solo entran al build los usados). Para agregar uno: exportarlo en `icons.ts` e importarlo en el componente.
+- Ajustes propios mínimos en `src/styles.css`.
 
 ## Estructura
 ```

@@ -1,28 +1,50 @@
-<header>
-  <h1>Carrito de compras</h1>
-</header>
+<nav class="navbar navbar-dark bg-dark shadow-sm mb-4">
+  <div class="container-xl">
+    <span class="navbar-brand fw-semibold">
+      <fa-icon [icon]="icons.faStore" class="me-2" />KATA E-Commerce
+    </span>
+    <span class="navbar-text text-white">
+      <fa-icon [icon]="icons.faCartShopping" class="me-1" />
+      <span class="badge rounded-pill text-bg-primary">{{ cart.totalUnits() }}</span>
+    </span>
+  </div>
+</nav>
 
-@if (orders.lastOrder(); as order) {
-  <app-order-confirmation [order]="order" (closed)="orders.dismissConfirmation()" />
-}
+<main class="container-xl pb-5">
+  @if (orders.lastOrder(); as order) {
+    <app-order-confirmation [order]="order" (closed)="orders.dismissConfirmation()" />
+  }
 
-<main class="layout">
-  <section>
-    <app-product-list />
-  </section>
+  <div class="row g-4">
+    <section class="col-lg-7">
+      <app-product-list />
+    </section>
 
-  <aside>
-    <app-cart />
+    <aside class="col-lg-5 d-flex flex-column gap-4">
+      <app-cart />
 
-    <h2>Descuentos</h2>
-    <app-coupon-form />
+      <div class="card shadow-sm">
+        <div class="card-header bg-white">
+          <h2 class="h5 mb-0"><fa-icon [icon]="icons.faPercent" class="me-2 text-primary" />Descuentos</h2>
+        </div>
+        <div class="card-body">
+          <app-coupon-form />
 
-    @if (cart.quoteLoading()) {
-      <p>Calculando descuentos…</p>
-    } @else if (cart.quote(); as quote) {
-      <app-discount-summary [data]="quote" />
-    } @else if (!cart.isEmpty() && !cart.quoteError()) {
-      <p class="hint">Pulse «Aplicar» (con o sin cupón) para ver el desglose de descuentos.</p>
-    }
-  </aside>
+          @if (cart.quoteLoading()) {
+            <div class="d-flex align-items-center gap-2 text-secondary">
+              <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+              Calculando descuentos…
+            </div>
+          } @else if (cart.quote(); as quote) {
+            <app-discount-summary [data]="quote" />
+          } @else if (!cart.isEmpty() && !cart.quoteError()) {
+            <div class="alert alert-info d-flex align-items-center gap-2 mb-0 small" role="status">
+              <fa-icon [icon]="icons.faCircleInfo" />
+              Pulse «Aplicar» (con o sin cupón) para ver el desglose de descuentos.
+            </div>
+          }
+        </div>
+      </div>
+    </aside>
+  </div>
 </main>
