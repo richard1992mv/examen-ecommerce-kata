@@ -3,7 +3,9 @@ package com.examen.ecommerce.service.discount;
 import com.examen.ecommerce.config.DiscountProperties;
 import com.examen.ecommerce.util.MoneyUtils;
 import java.math.BigDecimal;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.springframework.stereotype.Component;
 
@@ -15,17 +17,20 @@ import org.springframework.stereotype.Component;
  *   <li>Cupón: si es válido, subtotal_2 × % del cupón (WELCOME2026 15 %).</li>
  *   <li>Tope: el descuento total nunca supera el 35 % del subtotal original.</li>
  * </ol>
+ *
+ * <p><b>Uso de los patrones:</b> el calculador es el <i>contexto</i> del patrón Strategy. Pide las reglas 1–3 a
+ * {@link DiscountRuleFactory} (Factory) y las recorre a través de la interfaz {@link DiscountRule} sin conocer
+ * cada fórmula; cada regla recibe el subtotal que dejó la anterior. El tope (paso 4) no es una regla de la
+ * cascada sino un límite sobre la suma de las tres, por eso se resuelve aquí.
  */
 @Component
 public class DiscountCalculator {
 
-    private final BigDecimal volumePct;
-    private final BigDecimal volumeThreshold;
+    private final DiscountRuleFactory ruleFactory;
     private final BigDecimal capPct;
 
     public DiscountCalculator(DiscountProperties properties) {
-        this.volumePct = properties.volume().pct();
-        this.volumeThreshold = properties.volume().threshold();
+        this.ruleFactory = new DiscountRuleFactory(properties);
         this.capPct = MoneyUtils.round(properties.capPct());
     }
 
@@ -33,19 +38,20 @@ public class DiscountCalculator {
      * @param couponPct porcentaje del cupón ya validado; vacío si no hay cupón
      */
     public DiscountResult calculate(List<DiscountLine> lines, Optional<BigDecimal> couponPct) {
-        List<DiscountResult.LineResult> lineResults = lines.stream().map(this::applyCategory).toList();
+        List<DiscountResult.LineResult> lineResults = lines.stream().map(DiscountCalculator::toLineResult).toList();
         BigDecimal original = MoneyUtils.sum(lines.stream().map(DiscountLine::lineSubtotal).toList());
 
-        BigDecimal category = MoneyUtils.sum(
-                lineResults.stream().map(DiscountResult.LineResult::categoryDiscount).toList());
-        BigDecimal subtotal1 = MoneyUtils.subtract(original, category);
-
-        BigDecimal volume = MoneyUtils.isGreaterThan(subtotal1, volumeThreshold)
-                ? MoneyUtils.percentOf(subtotal1, volumePct)
-                : MoneyUtils.ZERO;
-        BigDecimal subtotal2 = MoneyUtils.subtract(subtotal1, volume);
-
-        BigDecimal coupon = couponPct.map(pct -> MoneyUtils.percentOf(subtotal2, pct)).orElse(MoneyUtils.ZERO);
+        // Cascada: cada estrategia descuenta sobre el subtotal que dejó la anterior.
+        Map<DiscountType, BigDecimal> amounts = new EnumMap<>(DiscountType.class);
+        BigDecimal subtotal = original;
+        for (DiscountRule rule : ruleFactory.createRules(couponPct)) {
+            BigDecimal amount = rule.calculate(lines, subtotal);
+            amounts.put(rule.type(), amount);
+            subtotal = MoneyUtils.subtract(subtotal, amount);
+        }
+        BigDecimal category = amounts.getOrDefault(DiscountType.CATEGORY, MoneyUtils.ZERO);
+        BigDecimal volume = amounts.getOrDefault(DiscountType.VOLUME, MoneyUtils.ZERO);
+        BigDecimal coupon = amounts.getOrDefault(DiscountType.COUPON, MoneyUtils.ZERO);
 
         BigDecimal gross = MoneyUtils.sum(List.of(category, volume, coupon));
         BigDecimal cap = MoneyUtils.percentOf(original, capPct);
@@ -58,8 +64,8 @@ public class DiscountCalculator {
                 MoneyUtils.subtract(original, discountTotal));
     }
 
-    private DiscountResult.LineResult applyCategory(DiscountLine line) {
-        BigDecimal discount = MoneyUtils.percentOf(line.lineSubtotal(), line.categoryDiscountPct());
+    private static DiscountResult.LineResult toLineResult(DiscountLine line) {
+        BigDecimal discount = CategoryDiscountRule.discountFor(line);
         return new DiscountResult.LineResult(line, discount, MoneyUtils.subtract(line.lineSubtotal(), discount));
     }
 }

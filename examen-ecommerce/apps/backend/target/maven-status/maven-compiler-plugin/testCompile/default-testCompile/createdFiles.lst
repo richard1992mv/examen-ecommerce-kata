@@ -1,0 +1,15 @@
+com\examen\ecommerce\service\discount\CategoryDiscountTest.class
+com\examen\ecommerce\service\ProductCatalogTest.class
+com\examen\ecommerce\security\DatabaseUserDetailsServiceTest.class
+com\examen\ecommerce\service\discount\DiscountRuleFactoryTest.class
+com\examen\ecommerce\security\SecurityIntegrationTest.class
+com\examen\ecommerce\service\CouponValidatorTest$1.class
+com\examen\ecommerce\service\discount\VolumeDiscountTest.class
+com\examen\ecommerce\service\CheckoutOrderTest.class
+com\examen\ecommerce\security\AuthLoginDatabaseTest.class
+com\examen\ecommerce\service\ProductCatalogTest$1.class
+com\examen\ecommerce\service\discount\CouponDiscountTest.class
+com\examen\ecommerce\service\CouponBreakdownTest.class
+com\examen\ecommerce\service\discount\DiscountCapAlertTest.class
+com\examen\ecommerce\service\CouponValidatorTest.class
+com\examen\ecommerce\service\discount\DiscountCapTest.class

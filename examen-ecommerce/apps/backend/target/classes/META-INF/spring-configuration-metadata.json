@@ -9,7 +9,7 @@
       "name": "discount.volume",
       "type": "com.examen.ecommerce.config.DiscountProperties$Volume",
       "sourceType": "com.examen.ecommerce.config.DiscountProperties",
-      "sourceMethod": "public DiscountProperties.@Valid @NotNull Volume volume() "
+      "sourceMethod": "volume()"
     },
     {
       "name": "order.number",
