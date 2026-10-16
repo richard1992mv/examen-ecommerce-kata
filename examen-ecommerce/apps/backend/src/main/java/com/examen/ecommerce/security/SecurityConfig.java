@@ -30,7 +30,6 @@ public class SecurityConfig {
 
     static final String LOGIN_URL = "/api/v1/auth/login";
     private static final String[] PUBLIC_DOCS = {"/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html"};
-    private static final String[] PROTECTED_API = {"/api/v1/products/**", "/api/v1/cart/**", "/api/v1/orders/**"};
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
@@ -50,7 +49,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, LOGIN_URL).permitAll()
                         .requestMatchers(PUBLIC_DOCS).permitAll()
                         .requestMatchers("/error").permitAll()
-                        .requestMatchers(PROTECTED_API).authenticated()
+                        // Todo lo demás (/api/v1/products, /cart, /orders) exige token
                         .anyRequest().authenticated())
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint(authenticationEntryPoint)

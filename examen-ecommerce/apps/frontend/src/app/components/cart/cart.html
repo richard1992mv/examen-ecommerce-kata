@@ -33,7 +33,9 @@
               <tr>
                 <td>
                   <div class="fw-medium">{{ item.product.name }}</div>
-                  <small class="text-secondary">{{ item.product.unitPrice | currency: currency }} c/u</small>
+                  <small class="text-secondary"
+                    >{{ item.product.unitPrice | currency: currency }} c/u</small
+                  >
                 </td>
                 <td class="text-center">
                   <div class="input-group input-group-sm justify-content-center flex-nowrap">
@@ -46,12 +48,13 @@
                       <fa-icon [icon]="icons.faMinus" />
                     </button>
                     <input
+                      #quantityInput
                       type="number"
                       class="form-control text-center qty-input"
                       min="1"
                       [max]="item.product.stock"
                       [value]="item.quantity"
-                      (change)="onQuantityInput(item, $event)"
+                      (change)="onQuantityInput(item, quantityInput)"
                       aria-label="Cantidad"
                     />
                     <button
@@ -66,7 +69,9 @@
                   </div>
                   <small class="text-secondary">máx. {{ item.product.stock }}</small>
                 </td>
-                <td class="text-end text-nowrap">{{ item.product.unitPrice * item.quantity | currency: currency }}</td>
+                <td class="text-end text-nowrap">
+                  {{ item.product.unitPrice * item.quantity | currency: currency }}
+                </td>
                 <td class="text-end">
                   <button
                     type="button"
@@ -84,7 +89,9 @@
           <tfoot>
             <tr class="table-light">
               <th colspan="2">Subtotal original</th>
-              <th class="text-end text-nowrap">{{ cart.subtotalOriginal() | currency: currency }}</th>
+              <th class="text-end text-nowrap">
+                {{ cart.subtotalOriginal() | currency: currency }}
+              </th>
               <th></th>
             </tr>
           </tfoot>
@@ -107,7 +114,12 @@
         [disabled]="cart.isEmpty() || orders.loading() || cart.quoteLoading()"
       >
         @if (orders.loading()) {
-          <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Procesando…
+          <span
+            class="spinner-border spinner-border-sm me-2"
+            role="status"
+            aria-hidden="true"
+          ></span
+          >Procesando…
         } @else {
           <fa-icon [icon]="icons.faCreditCard" class="me-2" />Finalizar compra
         }

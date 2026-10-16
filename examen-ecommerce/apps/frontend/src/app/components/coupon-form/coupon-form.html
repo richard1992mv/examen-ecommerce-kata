@@ -3,6 +3,7 @@
   <div class="input-group">
     <span class="input-group-text"><fa-icon [icon]="icons.faTicket" /></span>
     <input
+      #couponInput
       id="coupon"
       type="text"
       class="form-control"
@@ -10,9 +11,13 @@
       placeholder="Ej. WELCOME2026 (opcional)"
       [class.is-invalid]="!!cart.quoteError()"
       [value]="code()"
-      (input)="code.set($any($event.target).value)"
+      (input)="code.set(couponInput.value)"
     />
-    <button type="submit" class="btn btn-primary" [disabled]="cart.isEmpty() || cart.quoteLoading()">
+    <button
+      type="submit"
+      class="btn btn-primary"
+      [disabled]="cart.isEmpty() || cart.quoteLoading()"
+    >
       Aplicar
     </button>
     @if (cart.couponCode()) {
@@ -33,7 +38,9 @@
 @if (cart.couponCode() && cart.quote()) {
   <div class="alert alert-success d-flex align-items-center gap-2 py-2" role="status">
     <fa-icon [icon]="icons.faCircleCheck" />
-    <span>Cupón <strong>{{ cart.couponCode() }}</strong> aplicado correctamente.</span>
+    <span
+      >Cupón <strong>{{ cart.couponCode() }}</strong> aplicado correctamente.</span
+    >
   </div>
 }
 @if (cart.quoteError(); as error) {

@@ -8,7 +8,10 @@
       [disabled]="productService.loading()"
       title="Recargar productos"
     >
-      <fa-icon [icon]="icons.faArrowsRotate" [animation]="productService.loading() ? 'spin' : undefined" />
+      <fa-icon
+        [icon]="icons.faArrowsRotate"
+        [animation]="productService.loading() ? 'spin' : undefined"
+      />
     </button>
   </div>
 
@@ -47,7 +50,9 @@
               <tr [class.text-body-tertiary]="p.stock === 0">
                 <td>{{ p.id }}</td>
                 <td class="fw-medium">{{ p.name }}</td>
-                <td><span class="badge text-bg-light border">{{ p.categoryName }}</span></td>
+                <td>
+                  <span class="badge text-bg-light border">{{ p.categoryName }}</span>
+                </td>
                 <td class="text-end">{{ p.unitPrice | currency: currency }}</td>
                 <td class="text-center">
                   <span class="badge" [class]="stockBadge(p.stock)">

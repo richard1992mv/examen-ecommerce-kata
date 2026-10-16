@@ -34,8 +34,8 @@ export class Cart {
     faTrashCan,
   };
 
-  protected onQuantityInput(item: CartItem, event: Event): void {
-    const input = event.target as HTMLInputElement;
+  /** Recibe el input por referencia de plantilla (#quantityInput): tipado sin castear event.target. */
+  protected onQuantityInput(item: CartItem, input: HTMLInputElement): void {
     this.cart.setQuantity(item.product, input.valueAsNumber);
     // Refleja el valor acotado (0..stock) si el usuario escribió algo fuera de rango
     input.value = String(this.cart.quantityOf(item.product.id) || '');

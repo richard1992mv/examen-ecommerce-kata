@@ -21,7 +21,7 @@ export class ProductService {
         this.products.set(products);
         this.loading.set(false);
       },
-      error: (err) => {
+      error: (err: unknown) => {
         this.error.set(toErrorMessage(err));
         this.loading.set(false);
       },

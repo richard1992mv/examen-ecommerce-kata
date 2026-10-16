@@ -1,13 +1,24 @@
 <div class="card border-success shadow mb-4">
   <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
-    <h2 class="h5 mb-0"><fa-icon [icon]="icons.faCircleCheck" class="me-2" />¡Compra realizada con éxito!</h2>
-    <button type="button" class="btn-close btn-close-white" (click)="closed.emit()" aria-label="Cerrar"></button>
+    <h2 class="h5 mb-0">
+      <fa-icon [icon]="icons.faCircleCheck" class="me-2" />¡Compra realizada con éxito!
+    </h2>
+    <button
+      type="button"
+      class="btn-close btn-close-white"
+      (click)="closed.emit()"
+      aria-label="Cerrar"
+    ></button>
   </div>
   <div class="card-body">
     <div class="alert alert-success d-flex flex-wrap align-items-center gap-3" role="status">
       <fa-icon [icon]="icons.faReceipt" size="lg" />
-      <span>Orden <strong class="font-monospace">{{ order().orderNumber }}</strong></span>
-      <span class="text-success-emphasis">{{ order().createdAt | date: 'dd/MM/yyyy HH:mm:ss' }}</span>
+      <span
+        >Orden <strong class="font-monospace">{{ order().orderNumber }}</strong></span
+      >
+      <span class="text-success-emphasis">{{
+        order().createdAt | date: 'dd/MM/yyyy HH:mm:ss'
+      }}</span>
     </div>
     <div class="row justify-content-center">
       <div class="col-lg-8">

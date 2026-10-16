@@ -1,5 +1,7 @@
 package com.examen.ecommerce.controller;
 
+import com.examen.ecommerce.exception.ErrorMessages;
+import com.examen.ecommerce.exception.ProblemDetails;
 import com.examen.ecommerce.security.JwtService;
 import com.examen.ecommerce.security.LoginRequest;
 import com.examen.ecommerce.security.TokenResponse;
@@ -7,7 +9,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import java.net.URI;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -25,8 +26,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/auth")
 @Tag(name = "Autenticación")
 public class AuthController {
-
-    private static final String BAD_CREDENTIALS = "Usuario o contraseña inválidos";
 
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
@@ -51,9 +50,6 @@ public class AuthController {
     @ExceptionHandler(AuthenticationException.class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     public ProblemDetail handleBadCredentials(AuthenticationException ex) {
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, BAD_CREDENTIALS);
-        problem.setTitle(HttpStatus.UNAUTHORIZED.getReasonPhrase());
-        problem.setType(URI.create("urn:problem-type:invalid-credentials"));
-        return problem;
+        return ProblemDetails.of(HttpStatus.UNAUTHORIZED, "invalid-credentials", ErrorMessages.BAD_CREDENTIALS);
     }
 }

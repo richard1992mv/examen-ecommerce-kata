@@ -29,8 +29,9 @@ public class DiscountCalculator {
     private final DiscountRuleFactory ruleFactory;
     private final BigDecimal capPct;
 
-    public DiscountCalculator(DiscountProperties properties) {
-        this.ruleFactory = new DiscountRuleFactory(properties);
+    /** @param ruleFactory fábrica inyectada: el calculador depende de ella sin construirla */
+    public DiscountCalculator(DiscountRuleFactory ruleFactory, DiscountProperties properties) {
+        this.ruleFactory = ruleFactory;
         this.capPct = MoneyUtils.round(properties.capPct());
     }
 

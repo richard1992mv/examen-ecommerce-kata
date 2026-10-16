@@ -34,7 +34,7 @@ class DiscountCapTest {
         DiscountProperties properties = new DiscountProperties(
                 new DiscountProperties.Volume(new BigDecimal("5.00"), new BigDecimal("100.00")),
                 new BigDecimal("35.00"));
-        calculator = new DiscountCalculator(properties);
+        calculator = new DiscountCalculator(new DiscountRuleFactory(properties), properties);
     }
 
     @Test

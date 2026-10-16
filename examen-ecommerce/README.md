@@ -92,7 +92,7 @@ Tipos de prueba:
 | Web + seguridad | `SecurityIntegrationTest` | `@WebMvcTest` con repositorios simulados |
 | Con BD | `ProductCatalogTest`, `CouponBreakdownTest`, `CheckoutOrderTest`, `DiscountCapAlertTest`, `AuthLoginDatabaseTest` | `@SpringBootTest` + perfil `dev` contra el MySQL local; `@Transactional` deshace los cambios al terminar |
 
-Las pruebas con BD dependen de la fecha real: `WELCOME2026` vence el 2026-12-31 y no hay un reloj fijo.
+La hora se inyecta como `Clock` (`config/TimeConfig`). Las pruebas unitarias de `CouponValidatorTest` usan un reloj fijo, pero las pruebas con BD usan el reloj real del bean: dependen de la fecha actual porque `WELCOME2026` vence el 2026-12-31.
 
 > Pendiente: el requisito de cobertura mínima del 80 % **no se mide** hoy (el `pom.xml` no incluye JaCoCo).
 

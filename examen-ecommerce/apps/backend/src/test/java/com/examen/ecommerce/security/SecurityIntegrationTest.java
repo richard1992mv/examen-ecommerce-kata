@@ -11,13 +11,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.examen.ecommerce.config.TimeConfig;
 import com.examen.ecommerce.controller.AuthController;
 import com.examen.ecommerce.controller.ProductController;
 import com.examen.ecommerce.entity.AppUser;
+import com.examen.ecommerce.exception.ErrorMessages;
 import com.examen.ecommerce.repository.AppUserRepository;
 import com.examen.ecommerce.service.ProductService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.Clock;
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,7 +43,7 @@ import org.springframework.test.web.servlet.MockMvc;
  */
 @WebMvcTest(controllers = {AuthController.class, ProductController.class})
 @Import({SecurityConfig.class, JwtService.class, JwtAuthenticationEntryPoint.class, JwtAccessDeniedHandler.class,
-        DatabaseUserDetailsService.class})
+        DatabaseUserDetailsService.class, TimeConfig.class})
 @DisplayName("Seguridad JWT · login, 401 y acceso con token")
 class SecurityIntegrationTest {
 
@@ -83,7 +87,7 @@ class SecurityIntegrationTest {
                 .andExpect(jsonPath("$.status").value(401))
                 .andExpect(jsonPath("$.title").value("Unauthorized"))
                 .andExpect(jsonPath("$.type").value("urn:problem-type:unauthorized"))
-                .andExpect(jsonPath("$.detail").value(SecurityProblems.MISSING_TOKEN));
+                .andExpect(jsonPath("$.detail").value(ErrorMessages.MISSING_TOKEN));
     }
 
     @Test
@@ -92,19 +96,21 @@ class SecurityIntegrationTest {
         mockMvc.perform(get(PRODUCTS_URL).header(HttpHeaders.AUTHORIZATION, "Bearer token.invalido.123"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.type").value("urn:problem-type:unauthorized"))
-                .andExpect(jsonPath("$.detail").value(SecurityProblems.INVALID_TOKEN));
+                .andExpect(jsonPath("$.detail").value(ErrorMessages.INVALID_TOKEN));
     }
 
     @Test
     @DisplayName("GET /products con token expirado → 401")
     void productsWithExpiredTokenReturns401() throws Exception {
+        // Emitido hace 2 horas con vigencia de 1 hora: el reloj inyectado permite simularlo sin esperar
+        Clock twoHoursAgo = Clock.offset(Clock.systemDefaultZone(), Duration.ofHours(-2));
         JwtService expiredIssuer = new JwtService(
-                "sQMXlSLkSLGE8RVJOxKTPG+Omna01r2jPqtCUbzpgvQ=", -60_000);
+                "sQMXlSLkSLGE8RVJOxKTPG+Omna01r2jPqtCUbzpgvQ=", 3_600_000, twoHoursAgo);
         String expired = expiredIssuer.generateToken("admin");
 
         mockMvc.perform(get(PRODUCTS_URL).header(HttpHeaders.AUTHORIZATION, "Bearer " + expired))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.detail").value(SecurityProblems.EXPIRED_TOKEN));
+                .andExpect(jsonPath("$.detail").value(ErrorMessages.EXPIRED_TOKEN));
     }
 
     @Test
@@ -151,7 +157,7 @@ class SecurityIntegrationTest {
 
         mockMvc.perform(get(PRODUCTS_URL).header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.detail").value(SecurityProblems.INVALID_TOKEN));
+                .andExpect(jsonPath("$.detail").value(ErrorMessages.INVALID_TOKEN));
     }
 
     @Test

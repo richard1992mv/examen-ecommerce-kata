@@ -6,20 +6,24 @@ import {
   HttpRequest,
 } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, catchError, finalize, map, of, shareReplay, switchMap, throwError } from 'rxjs';
+import {
+  Observable,
+  catchError,
+  finalize,
+  map,
+  of,
+  shareReplay,
+  switchMap,
+  throwError,
+} from 'rxjs';
 import { environment } from '../../environments/environment';
+import { LoginRequest, TokenResponse } from '../models';
 
 const LOGIN_URL = `${environment.apiUrl}/auth/login`;
-/** Credenciales del usuario en memoria del backend (app.security.user / app.security.password). */
-const API_CREDENTIALS = { username: 'admin', password: 'admin123' } as const;
+/** Credenciales de demo: usuario semilla de la tabla app_users (02_seed_data.sql). */
+const API_CREDENTIALS: Readonly<LoginRequest> = { username: 'admin', password: 'admin123' };
 /** Margen para renovar el token antes de que expire (segundos). */
 const EXPIRY_MARGIN_S = 30;
-
-interface TokenResponse {
-  accessToken: string;
-  tokenType: string;
-  expiresIn: number;
-}
 
 /** Obtiene y guarda en memoria el JWT. Usa HttpBackend para que el login no pase por el interceptor. */
 @Injectable({ providedIn: 'root' })

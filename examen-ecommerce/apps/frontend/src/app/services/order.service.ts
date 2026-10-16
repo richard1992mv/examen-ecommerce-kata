@@ -30,7 +30,7 @@ export class OrderService {
         this.cart.clear();
         this.products.load();
       },
-      error: (err) => {
+      error: (err: unknown) => {
         this.error.set(toErrorMessage(err));
         this.loading.set(false);
         // p. ej. 409 stock insuficiente: refrescar catálogo para ver el stock real

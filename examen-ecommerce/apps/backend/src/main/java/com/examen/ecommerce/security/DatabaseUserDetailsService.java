@@ -1,6 +1,7 @@
 package com.examen.ecommerce.security;
 
 import com.examen.ecommerce.entity.AppUser;
+import com.examen.ecommerce.exception.ErrorMessages;
 import com.examen.ecommerce.repository.AppUserRepository;
 import java.util.Locale;
 import org.springframework.security.core.userdetails.User;
@@ -29,7 +30,7 @@ public class DatabaseUserDetailsService implements UserDetailsService {
     public UserDetails loadUserByUsername(String username) {
         String normalized = username == null ? "" : username.trim();
         AppUser user = appUserRepository.findByUsername(normalized)
-                .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado"));
+                .orElseThrow(() -> new UsernameNotFoundException(ErrorMessages.USER_NOT_FOUND));
         return User.withUsername(user.getUsername())
                 .password(user.getPasswordHash())
                 .roles(user.getRole().trim().toUpperCase(Locale.ROOT))

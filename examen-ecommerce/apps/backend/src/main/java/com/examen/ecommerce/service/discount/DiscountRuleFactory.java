@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.stereotype.Component;
 
 /**
  * <b>Patrón Factory</b>: único lugar donde se instancian las reglas de descuento ({@link DiscountRule}).
@@ -20,7 +21,11 @@ import java.util.Optional;
  *
  * <p>Los parámetros de volumen salen de {@code application.properties} ({@code discount.volume.*}); los
  * porcentajes de categoría y cupón vienen de la BD. Las reglas sin estado por petición se crean una sola vez.
+ *
+ * <p>Es un bean de Spring que se inyecta en {@link DiscountCalculator} (inversión de dependencias: el calculador
+ * no decide cómo se construyen sus reglas).
  */
+@Component
 public class DiscountRuleFactory {
 
     private final DiscountRule categoryRule;

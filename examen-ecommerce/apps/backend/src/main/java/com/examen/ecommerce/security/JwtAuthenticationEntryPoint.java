@@ -1,5 +1,7 @@
 package com.examen.ecommerce.security;
 
+import com.examen.ecommerce.exception.ErrorMessages;
+import com.examen.ecommerce.exception.ProblemDetails;
 import com.examen.ecommerce.security.JwtAuthenticationFilter.TokenError;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
@@ -24,21 +26,23 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response,
                          AuthenticationException authException) throws IOException {
-        Object error = request.getAttribute(JwtAuthenticationFilter.JWT_ERROR_ATTRIBUTE);
+        // getAttribute devuelve Object (API de Servlet): se acota a TokenError; null = no se envió token
+        TokenError error = request.getAttribute(JwtAuthenticationFilter.JWT_ERROR_ATTRIBUTE)
+                instanceof TokenError tokenError ? tokenError : null;
         String detail;
         String bearerError;
         if (error == TokenError.EXPIRED) {
-            detail = SecurityProblems.EXPIRED_TOKEN;
+            detail = ErrorMessages.EXPIRED_TOKEN;
             bearerError = "Bearer error=\"invalid_token\", error_description=\"token expirado\"";
         } else if (error == TokenError.INVALID) {
-            detail = SecurityProblems.INVALID_TOKEN;
+            detail = ErrorMessages.INVALID_TOKEN;
             bearerError = "Bearer error=\"invalid_token\"";
         } else {
-            detail = SecurityProblems.MISSING_TOKEN;
+            detail = ErrorMessages.MISSING_TOKEN;
             bearerError = "Bearer";
         }
         response.setHeader(HttpHeaders.WWW_AUTHENTICATE, bearerError);
         SecurityProblems.write(request, response, objectMapper,
-                SecurityProblems.problem(HttpStatus.UNAUTHORIZED, "unauthorized", detail));
+                ProblemDetails.of(HttpStatus.UNAUTHORIZED, "unauthorized", detail));
     }
 }

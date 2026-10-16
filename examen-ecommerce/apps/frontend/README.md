@@ -29,6 +29,13 @@ El backend exige `Authorization: Bearer <token>` en todo `/api/v1` salvo el logi
 
 Pendiente: las credenciales de demostración están fijas en `auth.interceptor.ts`; no hay pantalla de login ni manejo de usuarios.
 
+## Tipado estricto
+- `tsconfig.json`: `strict`, `noImplicitReturns`, `noImplicitOverride`, `noPropertyAccessFromIndexSignature`, `noFallthroughCasesInSwitch`; Angular con `strictTemplates`, `strictInjectionParameters` y `strictInputAccessModifiers`.
+- **No hay `any`** en el código ni en las plantillas (tampoco `$any`). Los inputs se leen con referencias de plantilla tipadas (`#couponInput`, `#quantityInput`) en lugar de castear `event.target`.
+- Los contratos de la API están en `src/app/models` y reflejan campo por campo los DTO del backend (`ProductResponse`, `CartRequest`, `CartQuoteResponse`, `OrderResponse`, `ApiProblem`, `LoginRequest`, `TokenResponse`). Los montos `BigDecimal` llegan como `number` en JSON.
+- Uso justificado de `unknown`: los errores de RxJS y de `Promise.catch` no están tipados, así que se reciben como `unknown` y se acotan con `instanceof HttpErrorResponse`. El body del error (`HttpErrorResponse.error`, declarado `any` por Angular) se acota a `ApiProblem` con la guarda de tipo `isApiProblem` en `http-error.util.ts`.
+- `CartService` modela el resultado de cada cotización como una unión discriminada (`QuoteOutcome`), sin `null` casteado.
+
 ## Pruebas unitarias (Vitest)
 ```bash
 npm test -- --watch=false
@@ -42,7 +49,7 @@ npm test -- --watch=false
 ## Estructura
 ```
 src/app
-├─ models/        ProductResponse, CartRequest, CartQuoteResponse, OrderResponse, ApiProblem
+├─ models/        ProductResponse, CartRequest, CartQuoteResponse, OrderResponse, ApiProblem, LoginRequest, TokenResponse
 ├─ services/      ProductService, CartService (signals + recotización automática), OrderService, auth.interceptor (JWT), http-error.util
 └─ components/    product-list, cart, coupon-form, discount-summary, cap-alert, order-confirmation
 ```

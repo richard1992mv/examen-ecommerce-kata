@@ -18,7 +18,7 @@ El dominio es pequeño (5 tablas de negocio + `app_users` para autenticación) y
 | `mapper/` | `CheckoutMapper`: `DiscountResult` → respuesta de quote, entidad `Order` con snapshots y respuesta de orden; mensaje HU4 | Reglas de negocio |
 | `entity/` | Mapeo JPA fiel a `01_schema.sql` (bases `IdentifiedEntity` y `AuditableEntity`) | Lógica de aplicación |
 | `repository/` | Spring Data JPA, `JOIN FETCH`/`@EntityGraph`, UPDATE atómico de stock | — |
-| `exception/` | Excepciones de negocio + único `GlobalExceptionHandler` (RFC 9457); mensajes en `ErrorMessages` | — |
+| `exception/` | Excepciones de negocio + único `GlobalExceptionHandler` (RFC 9457); `ProblemDetails.of` construye todos los Problem Details; todos los mensajes (negocio, validación y seguridad) en `ErrorMessages` | — |
 | `security/` | JWT: `SecurityConfig` (cadena de filtros y CORS), `JwtService`, `JwtAuthenticationFilter`, `DatabaseUserDetailsService`, manejadores 401/403 | — |
 | `config/` | `OpenApiConfig` (esquema `bearerAuth`), `DiscountProperties`, `OrderNumberProperties` | — |
 | `util/` | `MoneyUtils` (todo el redondeo), `OrderNumberGenerator` | — |
@@ -37,7 +37,7 @@ Pendiente: no existe una prueba automática de arquitectura (pureza de paquetes,
 | `app_users` | `AppUser` | Solo lectura (login JWT). `password_hash` BCrypt; `role` sin prefijo `ROLE_`; `is_active` con `@JdbcTypeCode(TINYINT)`; `toString` sin el hash |
 
 - IDs `INT UNSIGNED` → `Integer` (`columnDefinition = "INT UNSIGNED"`), `DATETIME` → `LocalDateTime`, `DECIMAL` → `BigDecimal`.
-- `created_at/updated_at` de catálogo y `app_users` los gestiona MySQL (`AuditableEntity`: `insertable=false, updatable=false`). En `orders.created_at` la aplicación escribe `LocalDateTime.now()` (coherente con el año del `order_number`). Pendiente: no hay `Clock` inyectado, así que la hora no es determinista en pruebas.
+- `created_at/updated_at` de catálogo y `app_users` los gestiona MySQL (`AuditableEntity`: `insertable=false, updatable=false`). En `orders.created_at` la aplicación escribe `LocalDateTime.now(clock)` (coherente con el año del `order_number`), con el `Clock` inyectado desde `TimeConfig`.
 - `equals/hashCode` por id (compatibles con proxies) y `toString` sin relaciones.
 - Anti N+1: `JOIN FETCH` (`findAllWithCategoryByIdIn`, usado en quote y checkout) y `@EntityGraph` (`findAllByOrderByIdAsc`, catálogo de HU1).
 
@@ -80,7 +80,7 @@ POST /cart/quote                         POST /orders  (TransactionTemplate: una
       └─ PricingService.price ◄── mismo ───────── placeOrder
           1 CartValidator                        1-5 PricingService.price (idéntico a quote)
           2 ProductRepository (1 consulta)       6   StockService.decrement → UPDATE ... WHERE stock >= :qty
-          3 CouponValidator (LocalDateTime.now)  7   OrderNumberGenerator (ORD-2026-000005)
+          3 CouponValidator (Clock inyectado)    7   OrderNumberGenerator (ORD-2026-000005)
           4 StockService.assertAvailable         8   CheckoutMapper.toOrder → saveAndFlush
           5 DiscountCalculator                   9   CheckoutMapper.toOrderResponse
       └─ CheckoutMapper.toQuoteResponse
@@ -96,10 +96,10 @@ Todas las rutas bajo `/api/v1` (salvo `POST /auth/login`) pasan antes por `JwtAu
 | **O** Abierto/cerrado | `DiscountRule`, `DiscountRuleFactory`, `DiscountProperties` | Los porcentajes y el umbral se cambian por configuración o en la BD sin tocar código. Una regla nueva es otra implementación de `DiscountRule` registrada en la fábrica (y un valor en `DiscountType`); el bucle de `DiscountCalculator` no cambia. Si la regla necesita su propio campo en el desglose, también cambian `DiscountResult` y la respuesta |
 | **L** Liskov | `CategoryDiscountRule`, `VolumeDiscountRule`, `CouponDiscountRule` | Las tres reglas son intercambiables para `DiscountCalculator`: todas cumplen el contrato de `DiscountRule` (reciben el subtotal acumulado y devuelven un monto ≥ 0 redondeado) |
 | **I** Segregación | `PricingService`, `StockService`, `CartValidator`, `CouponValidator` | Servicios pequeños por responsabilidad; no existe un `EcommerceService`. No se definen interfaces |
-| **D** Inversión | Todas las clases de `service/`, `security/`, `mapper/` | Inyección por constructor y `DiscountProperties` inyectado. Las dependencias son clases concretas, no interfaces |
+| **D** Inversión | Todas las clases de `service/`, `security/`, `mapper/`; `TimeConfig`; `DiscountCalculator` | Inyección por constructor en todas las clases (sin `@Autowired` en campos). `DiscountCalculator` depende de la abstracción `DiscountRule` y recibe `DiscountRuleFactory` inyectada en lugar de construirla. La hora no se obtiene con `LocalDateTime.now()`: `CouponValidator` y `OrderService` reciben un `Clock` (bean de `TimeConfig`), y las pruebas lo sustituyen por `Clock.fixed(...)` (`CouponValidatorTest`). Los servicios dependen de clases concretas sin interfaces propias, porque cada uno tiene una sola implementación |
 | **DRY** dinero | `MoneyUtils` | Único lugar con `setScale/RoundingMode` (`percentOf`, `ratioAsPercent`, …) |
 | **DRY** cálculo | `PricingService` | `/cart/quote` y `/orders` ejecutan exactamente el mismo flujo |
-| **DRY** errores | `GlobalExceptionHandler`, `ErrorMessages`, `SecurityProblems` | Problem Details se construye en un solo formato (también para 401/403); mensajes como constantes |
+| **DRY** errores | `ProblemDetails`, `ErrorMessages` | `ProblemDetails.of(status, tipo, detalle)` es el único lugar que arma un Problem Details; lo usan `GlobalExceptionHandler`, `AuthController` (401 de login) y los manejadores 401/403 de seguridad (`SecurityProblems` solo escribe la respuesta servlet). Todos los mensajes son constantes de `ErrorMessages` |
 | **DRY** validación | `@UniqueProductIds` | `CartValidator` reutiliza `UniqueProductIdsValidator.firstDuplicate` |
 
 ## 7. Patrones de diseño
@@ -124,7 +124,7 @@ for (DiscountRule rule : ruleFactory.createRules(couponPct)) {
 Decisiones de alcance:
 
 - **El tope (R4) no es una estrategia.** No es un paso de la cascada sino un límite sobre la suma de R1–R3, por eso se resuelve en `DiscountCalculator` (la primera versión tenía además `DiscountCapPolicy`; se descartó por no tener más de una implementación).
-- **La fábrica no es un bean de Spring.** `DiscountCalculator` la crea en su constructor a partir de `DiscountProperties`, por eso su constructor y la firma de `calculate()` no cambiaron (`PricingService` y las pruebas existentes siguen igual). Las reglas sin estado por petición (categoría y volumen) se crean una vez; la de cupón, en cada cálculo.
+- **La fábrica es un bean inyectado.** `DiscountRuleFactory` es un `@Component` que `DiscountCalculator` recibe por constructor (inversión de dependencias: el calculador no decide cómo se construyen sus reglas). Las pruebas unitarias la crean con `new DiscountRuleFactory(properties)`. Las reglas sin estado por petición (categoría y volumen) se crean una vez; la de cupón, en cada cálculo.
 - **Las reglas son `final` y visibles solo dentro del paquete**; fuera de `service/discount/` solo se usa `DiscountCalculator`.
 - `CategoryDiscountRule.discountFor(line)` también la usa el calculador para el desglose por línea (`LineResult`), de modo que la fórmula de categoría vive en un solo lugar.
 
@@ -164,9 +164,10 @@ Las pruebas `@SpringBootTest` (por ejemplo, `CheckoutOrderTest`) arrancan con `v
 | **Snapshots** | `order_items` guarda nombre, categoría y precio; `orders` guarda `coupon_code` y `discount_cap_pct`: el histórico no cambia si cambia el catálogo |
 | **Redondeo por paso** | Reproduce el seed al centavo (83.505 → 83.51 antes de sumar) |
 | **order_number** | `max(order_number)` del año + 1 (`ORD-2026-000005`), garantizado por `uk_orders_order_number` + reintento acotado (`order.number.max-attempts=3`), cada intento en una transacción nueva |
-| **Zona horaria única** | `America/Bogota` (`app.time-zone` del `pom.xml`) para `hibernate.jdbc.time_zone` y `-Duser.timezone` (surefire y `spring-boot:run`): `LocalDateTime.now()` y los `DATETIME` usan la misma zona |
+| **Zona horaria única** | `America/Bogota` (`app.time-zone` del `pom.xml`) para `hibernate.jdbc.time_zone` y `-Duser.timezone` (surefire y `spring-boot:run`): el `Clock` de `TimeConfig` (`Clock.systemDefaultZone()`) y los `DATETIME` usan la misma zona |
 | **`PricingService` y `TransactionTemplate`** | `PricingService` concentra el cálculo (DRY). `OrderService` usa `TransactionTemplate` para abrir una transacción por intento y reintentar fuera de ella |
 | **Autenticación con usuarios en BD** | `app_users` con BCrypt en lugar de usuarios en memoria: credenciales fuera del código y usuarios bloqueables (`is_active = 0`) |
+| **Tipado estricto de extremo a extremo** | Backend: DTO como `record` con tipos concretos (`BigDecimal` para dinero, `Integer`/`int`, `boolean`, `List<T>`), sin tipos crudos ni `@SuppressWarnings`; los únicos `Object` vienen de contratos externos (`equals(Object)` y `HttpServletRequest.getAttribute`, este último acotado con `instanceof TokenError`). Frontend: `strict` + `strictTemplates`, sin `any` ni `$any`; interfaces en `models/` que reflejan cada DTO; `unknown` solo para errores no tipados de RxJS, acotado antes de usarse (ver `apps/frontend/README.md`) |
 | **Validación doble del carrito** | Bean Validation (400 con lista de campos en HTTP) + `CartValidator` (garantía de negocio para cualquier invocador); comparten la detección de duplicados |
 
 ## 10. Trade-offs
@@ -184,7 +185,7 @@ Las pruebas `@SpringBootTest` (por ejemplo, `CheckoutOrderTest`) arrancan con `v
 - `POST /api/v1/auth/login` (`AuthController`) autentica con `AuthenticationManager` + `DaoAuthenticationProvider` contra `app_users` (`DatabaseUserDetailsService`, BCrypt). Devuelve `TokenResponse` (`accessToken`, `tokenType = "Bearer"`, `expiresIn` en segundos). Credenciales inválidas o usuario inactivo → 401.
 - Rutas públicas: el login, Swagger/OpenAPI (`/v3/api-docs/**`, `/swagger-ui/**`), `/error` y `OPTIONS`. Todo lo demás exige `Authorization: Bearer <token>` (`JwtAuthenticationFilter`).
 - 401 (sin token, token inválido o expirado) y 403 en formato Problem Details (`JwtAuthenticationEntryPoint`, `JwtAccessDeniedHandler`, `SecurityProblems`).
-- Secreto y vigencia: `app.jwt.secret` y `app.jwt.expiration-ms`, sobrescribibles con `JWT_SECRET` y `JWT_EXPIRATION_MS`.
+- Secreto y vigencia: `app.jwt.secret` y `app.jwt.expiration-ms`, sobrescribibles con `JWT_SECRET` y `JWT_EXPIRATION_MS`. `JwtService` usa el `Clock` inyectado para emitir (`iat`/`exp`) y para validar la expiración (`JwtParserBuilder.clock`), de modo que `SecurityIntegrationTest` simula un token vencido con un reloj desplazado.
 - CORS en `SecurityConfig.corsConfigurationSource`, con orígenes desde `app.cors.allowed-origins` (definido en los perfiles `dev` y `test`).
 - Swagger UI muestra el botón "Authorize" (`OpenApiConfig`, esquema `bearerAuth`).
 - Se mantienen: errores sin stack trace ni mensajes internos (`server.error.include-*=never`) y DTO sin campos sensibles ni montos enviados por el cliente.

@@ -5,7 +5,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CartQuoteResponse, ProductResponse } from '../models';
 import { CartService, REQUOTE_DEBOUNCE_MS } from './cart.service';
 
-const product = (id: number, unitPrice: number, stock: number, categoryName = 'Tecnología'): ProductResponse => ({
+const product = (
+  id: number,
+  unitPrice: number,
+  stock: number,
+  categoryName = 'Tecnología',
+): ProductResponse => ({
   id,
   name: `Producto ${id}`,
   unitPrice,
@@ -43,7 +48,9 @@ describe('CartService', () => {
 
   beforeEach(() => {
     vi.useFakeTimers();
-    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting()],
+    });
     service = TestBed.inject(CartService);
     http = TestBed.inject(HttpTestingController);
   });
@@ -115,7 +122,10 @@ describe('CartService', () => {
     vi.advanceTimersByTime(REQUOTE_DEBOUNCE_MS);
     const req = http.expectOne(QUOTE_URL);
     expect(req.request.method).toBe('POST');
-    expect(req.request.body).toEqual({ items: [{ productId: 1, quantity: 1 }], couponCode: 'WELCOME2026' });
+    expect(req.request.body).toEqual({
+      items: [{ productId: 1, quantity: 1 }],
+      couponCode: 'WELCOME2026',
+    });
 
     req.flush(quoteResponse({ couponCode: 'WELCOME2026' }));
     expect(service.quote()?.total).toBe(96.9);
@@ -159,7 +169,10 @@ describe('CartService', () => {
   it('syncProducts() ajusta cantidades al nuevo stock y quita productos agotados', () => {
     service.setQuantity(AUDIFONOS, 10);
     service.add(MOUSE);
-    service.syncProducts([{ ...AUDIFONOS, stock: 4 }, { ...MOUSE, stock: 0 }]);
+    service.syncProducts([
+      { ...AUDIFONOS, stock: 4 },
+      { ...MOUSE, stock: 0 },
+    ]);
     expect(service.quantityOf(1)).toBe(4);
     expect(service.quantityOf(2)).toBe(0);
   });

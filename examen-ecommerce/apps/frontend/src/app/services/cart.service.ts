@@ -8,6 +8,9 @@ import { toErrorMessage } from './http-error.util';
 /** Espera tras un cambio del carrito antes de recotizar. */
 export const REQUOTE_DEBOUNCE_MS = 300;
 
+/** Resultado de una cotización: unión discriminada por `ok` (sin castear null ni mezclar campos). */
+type QuoteOutcome = { ok: true; quote: CartQuoteResponse } | { ok: false; error: unknown };
+
 /**
  * Estado del carrito con signals.
  * El cliente SOLO calcula el subtotal original; los descuentos vienen de POST /cart/quote.
@@ -34,7 +37,10 @@ export class CartService {
   readonly totalUnits = computed(() => this._items().reduce((acc, i) => acc + i.quantity, 0));
   /** Σ unitPrice × quantity, redondeado a 2 decimales. */
   readonly subtotalOriginal = computed(
-    () => Math.round(this._items().reduce((acc, i) => acc + i.product.unitPrice * i.quantity, 0) * 100) / 100,
+    () =>
+      Math.round(
+        this._items().reduce((acc, i) => acc + i.product.unitPrice * i.quantity, 0) * 100,
+      ) / 100,
   );
 
   constructor() {
@@ -44,12 +50,14 @@ export class CartService {
         switchMap(() => {
           if (this.isEmpty()) return EMPTY;
           return this.http.post<CartQuoteResponse>(this.url, this.toRequest()).pipe(
-            map((quote) => ({ quote, error: null as unknown })),
-            catchError((error: unknown) => of({ quote: null, error })),
+            map((quote): QuoteOutcome => ({ ok: true, quote })),
+            catchError((error: unknown) => of<QuoteOutcome>({ ok: false, error })),
           );
         }),
       )
-      .subscribe(({ quote, error }) => (quote ? this.onQuote(quote) : this.onQuoteError(error)));
+      .subscribe((outcome) =>
+        outcome.ok ? this.onQuote(outcome.quote) : this.onQuoteError(outcome.error),
+      );
   }
 
   quantityOf(productId: number): number {
@@ -80,7 +88,9 @@ export class CartService {
     if (qty === 0) {
       this._items.update((items) => items.filter((i) => i.product.id !== product.id));
     } else if (exists) {
-      this._items.update((items) => items.map((i) => (i.product.id === product.id ? { ...i, quantity: qty } : i)));
+      this._items.update((items) =>
+        items.map((i) => (i.product.id === product.id ? { ...i, quantity: qty } : i)),
+      );
     } else {
       this._items.update((items) => [...items, { product, quantity: qty }]);
     }
@@ -105,7 +115,8 @@ export class CartService {
     for (const item of current) {
       const fresh = byId.get(item.product.id);
       const qty = fresh ? Math.min(item.quantity, fresh.stock) : 0;
-      if (qty !== item.quantity || fresh?.unitPrice !== item.product.unitPrice) quantitiesChanged = true;
+      if (qty !== item.quantity || fresh?.unitPrice !== item.product.unitPrice)
+        quantitiesChanged = true;
       if (fresh && qty > 0) next.push({ product: fresh, quantity: qty });
     }
     this._items.set(next);

@@ -1,5 +1,6 @@
 package com.examen.ecommerce.security;
 
+import com.examen.ecommerce.exception.ErrorMessages;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
@@ -54,7 +55,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             UserDetails user = userDetailsService.loadUserByUsername(username);
             if (!user.isEnabled()) {
                 // Usuario bloqueado en app_users después de emitir el token: el token deja de servir
-                throw new UsernameNotFoundException("Usuario inactivo");
+                throw new UsernameNotFoundException(ErrorMessages.USER_INACTIVE);
             }
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());

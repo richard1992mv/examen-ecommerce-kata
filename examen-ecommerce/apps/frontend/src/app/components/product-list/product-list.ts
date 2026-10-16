@@ -19,7 +19,13 @@ export class ProductList {
   protected readonly productService = inject(ProductService);
   protected readonly cart = inject(CartService);
   protected readonly currency = environment.defaultCurrency;
-  protected readonly icons = { faArrowsRotate, faBoxOpen, faCartPlus, faCircleExclamation, faStore };
+  protected readonly icons = {
+    faArrowsRotate,
+    faBoxOpen,
+    faCartPlus,
+    faCircleExclamation,
+    faStore,
+  };
 
   protected canAdd(product: ProductResponse): boolean {
     return this.cart.quantityOf(product.id) < product.stock;

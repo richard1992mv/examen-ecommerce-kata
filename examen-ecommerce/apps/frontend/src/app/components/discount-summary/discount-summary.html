@@ -22,14 +22,18 @@
       <th scope="row" class="fw-normal">
         Descuento por Cupón
         @if (d.couponCode) {
-          <span class="badge text-bg-primary ms-1"><fa-icon [icon]="icons.faTag" class="me-1" />{{ d.couponCode }}</span>
+          <span class="badge text-bg-primary ms-1"
+            ><fa-icon [icon]="icons.faTag" class="me-1" />{{ d.couponCode }}</span
+          >
         }
       </th>
       <td class="text-end text-success">- {{ d.couponDiscount | currency: d.currency }}</td>
     </tr>
     @if (d.capAdjustment > 0) {
       <tr class="table-warning">
-        <th scope="row" class="fw-normal">Ajuste por tope ({{ d.discountCapPct | number: '1.0-2' }}%)</th>
+        <th scope="row" class="fw-normal">
+          Ajuste por tope ({{ d.discountCapPct | number: '1.0-2' }}%)
+        </th>
         <td class="text-end">+ {{ d.capAdjustment | currency: d.currency }}</td>
       </tr>
     }
@@ -77,7 +81,9 @@
             <td class="text-end">{{ line.unitPrice | currency: d.currency }}</td>
             <td class="text-center">{{ line.quantity }}</td>
             <td class="text-end">{{ line.lineSubtotal | currency: d.currency }}</td>
-            <td class="text-end text-success">- {{ line.categoryDiscount | currency: d.currency }}</td>
+            <td class="text-end text-success">
+              - {{ line.categoryDiscount | currency: d.currency }}
+            </td>
             <td class="text-end fw-medium">{{ line.lineTotal | currency: d.currency }}</td>
           </tr>
         }

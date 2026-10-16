@@ -4,6 +4,7 @@ import com.examen.ecommerce.entity.Coupon;
 import com.examen.ecommerce.exception.ErrorMessages;
 import com.examen.ecommerce.exception.InvalidCouponException;
 import com.examen.ecommerce.repository.CouponRepository;
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import org.springframework.stereotype.Component;
@@ -13,9 +14,12 @@ import org.springframework.stereotype.Component;
 public class CouponValidator {
 
     private final CouponRepository couponRepository;
+    private final Clock clock;
 
-    public CouponValidator(CouponRepository couponRepository) {
+    /** @param clock hora actual inyectada (ver TimeConfig); permite probar la vigencia con una fecha fija */
+    public CouponValidator(CouponRepository couponRepository, Clock clock) {
         this.couponRepository = couponRepository;
+        this.clock = clock;
     }
 
     /** @return vacío si no se envió código; el cupón si es válido */
@@ -29,7 +33,7 @@ public class CouponValidator {
         if (!coupon.isActive()) {
             throw new InvalidCouponException(ErrorMessages.COUPON_INACTIVE, normalized);
         }
-        if (!coupon.isValidAt(LocalDateTime.now())) {
+        if (!coupon.isValidAt(LocalDateTime.now(clock))) {
             throw new InvalidCouponException(ErrorMessages.COUPON_OUT_OF_VALIDITY, normalized);
         }
         return Optional.of(coupon);

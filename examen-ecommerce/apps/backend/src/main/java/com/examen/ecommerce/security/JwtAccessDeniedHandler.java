@@ -1,5 +1,7 @@
 package com.examen.ecommerce.security;
 
+import com.examen.ecommerce.exception.ErrorMessages;
+import com.examen.ecommerce.exception.ProblemDetails;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -23,6 +25,6 @@ public class JwtAccessDeniedHandler implements AccessDeniedHandler {
     public void handle(HttpServletRequest request, HttpServletResponse response,
                        AccessDeniedException accessDeniedException) throws IOException {
         SecurityProblems.write(request, response, objectMapper,
-                SecurityProblems.problem(HttpStatus.FORBIDDEN, "forbidden", SecurityProblems.ACCESS_DENIED));
+                ProblemDetails.of(HttpStatus.FORBIDDEN, "forbidden", ErrorMessages.ACCESS_DENIED));
     }
 }

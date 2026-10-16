@@ -25,14 +25,20 @@
 
       <div class="card shadow-sm">
         <div class="card-header bg-white">
-          <h2 class="h5 mb-0"><fa-icon [icon]="icons.faPercent" class="me-2 text-primary" />Descuentos</h2>
+          <h2 class="h5 mb-0">
+            <fa-icon [icon]="icons.faPercent" class="me-2 text-primary" />Descuentos
+          </h2>
         </div>
         <div class="card-body">
           <app-coupon-form />
 
           @if (cart.quoteLoading()) {
             <div class="d-flex align-items-center gap-2 text-secondary">
-              <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+              <span
+                class="spinner-border spinner-border-sm"
+                role="status"
+                aria-hidden="true"
+              ></span>
               Calculando descuentos…
             </div>
           } @else if (cart.quote(); as quote) {

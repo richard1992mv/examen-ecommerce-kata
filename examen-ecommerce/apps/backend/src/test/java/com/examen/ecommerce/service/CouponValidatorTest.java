@@ -9,7 +9,9 @@ import com.examen.ecommerce.exception.InvalidCouponException;
 import com.examen.ecommerce.repository.CouponRepository;
 import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -29,6 +31,9 @@ import org.junit.jupiter.api.Test;
 class CouponValidatorTest {
 
     private static final String WELCOME2026 = "WELCOME2026";
+    private static final ZoneId BOGOTA = ZoneId.of("America/Bogota");
+    /** Fecha fija dentro de la vigencia de WELCOME2026: la prueba no depende del día en que se ejecute. */
+    private static final Clock DURANTE_2026 = fixedAt(LocalDateTime.of(2026, 6, 15, 12, 0));
 
     private final Map<String, Coupon> couponsByCode = new HashMap<>();
     private int repositoryCalls;
@@ -38,7 +43,7 @@ class CouponValidatorTest {
     void setUp() {
         couponsByCode.clear();
         repositoryCalls = 0;
-        validator = new CouponValidator(inMemoryRepository());
+        validator = new CouponValidator(inMemoryRepository(), DURANTE_2026);
     }
 
     @Test
@@ -96,6 +101,54 @@ class CouponValidatorTest {
         InvalidCouponException ex = assertThrows(InvalidCouponException.class, () -> validator.validate(WELCOME2026));
 
         assertEquals("El cupón 'WELCOME2026' está fuera de vigencia", ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("La vigencia se evalúa con la hora del Clock inyectado: el último segundo de 2026 aún es válido")
+    void usaLaHoraDelClockInyectadoDentroDeVigencia() {
+        save(couponValidDuring2026());
+        CouponValidator ultimoSegundo = new CouponValidator(inMemoryRepository(),
+                fixedAt(LocalDateTime.of(2026, 12, 31, 23, 59, 59)));
+
+        assertTrue(ultimoSegundo.validate(WELCOME2026).isPresent());
+    }
+
+    @Test
+    @DisplayName("La vigencia se evalúa con la hora del Clock inyectado: el 2027-01-01 ya está vencido")
+    void usaLaHoraDelClockInyectadoFueraDeVigencia() {
+        save(couponValidDuring2026());
+        CouponValidator vencido = new CouponValidator(inMemoryRepository(),
+                fixedAt(LocalDateTime.of(2027, 1, 1, 0, 0)));
+
+        InvalidCouponException ex = assertThrows(InvalidCouponException.class, () -> vencido.validate(WELCOME2026));
+
+        assertEquals("El cupón 'WELCOME2026' está fuera de vigencia", ex.getMessage());
+    }
+
+    private static Clock fixedAt(LocalDateTime dateTime) {
+        return Clock.fixed(dateTime.atZone(BOGOTA).toInstant(), BOGOTA);
+    }
+
+    /** WELCOME2026 con su vigencia real del seed: 2026-01-01 00:00:00 a 2026-12-31 23:59:59. */
+    private static Coupon couponValidDuring2026() {
+        LocalDateTime from = LocalDateTime.of(2026, 1, 1, 0, 0);
+        LocalDateTime until = LocalDateTime.of(2026, 12, 31, 23, 59, 59);
+        return new Coupon() {
+            @Override
+            public String getCode() {
+                return WELCOME2026;
+            }
+
+            @Override
+            public boolean isActive() {
+                return true;
+            }
+
+            @Override
+            public boolean isValidAt(LocalDateTime instant) {
+                return !instant.isBefore(from) && !instant.isAfter(until);
+            }
+        };
     }
 
     private void save(Coupon coupon) {

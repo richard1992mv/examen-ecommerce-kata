@@ -1,6 +1,6 @@
 package com.examen.ecommerce.exception;
 
-/** Única fuente de los mensajes de error de negocio y validación. */
+/** Única fuente de los mensajes de error de negocio, validación y seguridad. */
 public final class ErrorMessages {
 
     public static final String PRODUCTS_NOT_FOUND = "Productos no encontrados: %s";
@@ -22,6 +22,16 @@ public final class ErrorMessages {
     public static final String ENDPOINT_NOT_FOUND = "El recurso solicitado no existe";
     public static final String INTERNAL_ERROR = "Ocurrió un error inesperado. Intente nuevamente más tarde";
     public static final String UNIQUE_PRODUCTS = "no debe contener productId duplicados";
+
+    // Seguridad (login, JWT, 401/403)
+    public static final String BAD_CREDENTIALS = "Usuario o contraseña inválidos";
+    public static final String MISSING_TOKEN = "Se requiere un token de acceso (Authorization: Bearer <token>)";
+    public static final String INVALID_TOKEN = "El token de acceso es inválido";
+    public static final String EXPIRED_TOKEN = "El token de acceso ha expirado";
+    public static final String ACCESS_DENIED = "No tiene permisos para acceder a este recurso";
+    public static final String USER_NOT_FOUND = "Usuario no encontrado";
+    public static final String USER_INACTIVE = "Usuario inactivo";
+    public static final String TOKEN_WITHOUT_SUBJECT = "El token no contiene usuario";
 
     private ErrorMessages() {
     }

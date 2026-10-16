@@ -8,6 +8,7 @@ import com.examen.ecommerce.exception.OrderNumberGenerationException;
 import com.examen.ecommerce.mapper.CheckoutMapper;
 import com.examen.ecommerce.repository.OrderRepository;
 import com.examen.ecommerce.util.OrderNumberGenerator;
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.Locale;
 import org.slf4j.Logger;
@@ -35,10 +36,12 @@ public class OrderService {
     private final CheckoutMapper mapper;
     private final TransactionTemplate transaction;
     private final int maxAttempts;
+    private final Clock clock;
 
     public OrderService(PricingService pricingService, StockService stockService, OrderRepository orderRepository,
                         OrderNumberGenerator numberGenerator, CheckoutMapper mapper,
-                        PlatformTransactionManager transactionManager, OrderNumberProperties properties) {
+                        PlatformTransactionManager transactionManager, OrderNumberProperties properties,
+                        Clock clock) {
         this.pricingService = pricingService;
         this.stockService = stockService;
         this.orderRepository = orderRepository;
@@ -46,6 +49,7 @@ public class OrderService {
         this.mapper = mapper;
         this.transaction = new TransactionTemplate(transactionManager);
         this.maxAttempts = properties.maxAttempts();
+        this.clock = clock;
     }
 
     public OrderResponse checkout(CartRequest request) {
@@ -67,7 +71,7 @@ public class OrderService {
     private OrderResponse placeOrder(CartRequest request) {
         PricedCart priced = pricingService.price(request);
         stockService.decrement(request.items());
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(clock);
         Order order = mapper.toOrder(priced, nextOrderNumber(now.getYear()), now);
         return mapper.toOrderResponse(orderRepository.saveAndFlush(order));
     }
