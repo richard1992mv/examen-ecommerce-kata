@@ -4,6 +4,7 @@ import com.examen.ecommerce.dto.request.CartRequest;
 import com.examen.ecommerce.dto.response.CartQuoteResponse;
 import com.examen.ecommerce.service.PricingService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/cart")
 @Tag(name = "Carrito (HU2/HU4)")
+@SecurityRequirement(name = "bearerAuth")
 public class CartController {
 
     private final PricingService pricingService;

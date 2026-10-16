@@ -4,6 +4,7 @@ import com.examen.ecommerce.dto.request.CartRequest;
 import com.examen.ecommerce.dto.response.OrderResponse;
 import com.examen.ecommerce.service.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/orders")
 @Tag(name = "Órdenes (HU3)")
+@SecurityRequirement(name = "bearerAuth")
 public class OrderController {
 
     private final OrderService orderService;
