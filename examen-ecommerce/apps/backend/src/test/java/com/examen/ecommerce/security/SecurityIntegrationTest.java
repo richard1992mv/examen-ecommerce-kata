@@ -13,10 +13,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.examen.ecommerce.controller.AuthController;
 import com.examen.ecommerce.controller.ProductController;
+import com.examen.ecommerce.entity.AppUser;
+import com.examen.ecommerce.repository.AppUserRepository;
 import com.examen.ecommerce.service.ProductService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
+import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,18 +32,23 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 /**
- * Seguridad JWT de la API (sin base de datos: ProductService se simula).
+ * Seguridad JWT de la API sin MySQL: AppUserRepository y ProductService se simulan con los mismos
+ * usuarios y hashes BCrypt del seed (02_seed_data.sql).
  * Cubre: 401 sin token, 401 con token inválido/expirado, 200 en login, 401 con credenciales
- * inválidas y 200 en GET /products con token válido.
+ * inválidas o usuario inactivo y 200 en GET /products con token válido.
  */
 @WebMvcTest(controllers = {AuthController.class, ProductController.class})
-@Import({SecurityConfig.class, JwtService.class, JwtAuthenticationEntryPoint.class, JwtAccessDeniedHandler.class})
+@Import({SecurityConfig.class, JwtService.class, JwtAuthenticationEntryPoint.class, JwtAccessDeniedHandler.class,
+        DatabaseUserDetailsService.class})
 @DisplayName("Seguridad JWT · login, 401 y acceso con token")
 class SecurityIntegrationTest {
 
     private static final String LOGIN_URL = "/api/v1/auth/login";
     private static final String PRODUCTS_URL = "/api/v1/products";
     private static final String VALID_LOGIN = "{\"username\":\"admin\",\"password\":\"admin123\"}";
+    /** Hashes BCrypt del seed: admin123 y bloqueado123. */
+    private static final String ADMIN_HASH = "$2a$10$M6EUsAoIsb.FqakWs3EA9Oy0Xk6buEkxEvmuyWxKLqebYGBPBI1uS";
+    private static final String BLOCKED_HASH = "$2a$10$mOYFj9adPRvGIoO2grdl8eMjsGhidhPV83hGpANiJGriJXo.dgSDi";
 
     @Autowired
     private MockMvc mockMvc;
@@ -52,6 +61,17 @@ class SecurityIntegrationTest {
 
     @MockBean
     private ProductService productService;
+
+    @MockBean
+    private AppUserRepository appUserRepository;
+
+    @BeforeEach
+    void usuariosDeLaTabla() {
+        when(appUserRepository.findByUsername("admin"))
+                .thenReturn(Optional.of(new AppUser("admin", ADMIN_HASH, "ADMIN", true)));
+        when(appUserRepository.findByUsername("bloqueado"))
+                .thenReturn(Optional.of(new AppUser("bloqueado", BLOCKED_HASH, "USER", false)));
+    }
 
     @Test
     @DisplayName("GET /products sin token → 401 en formato Problem Details")
@@ -104,6 +124,34 @@ class SecurityIntegrationTest {
                         .content("{\"username\":\"admin\",\"password\":\"incorrecta\"}"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.type").value("urn:problem-type:invalid-credentials"));
+    }
+
+    @Test
+    @DisplayName("POST /auth/login con usuario inexistente → 401")
+    void loginWithUnknownUserReturns401() throws Exception {
+        mockMvc.perform(post(LOGIN_URL).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"nadie\",\"password\":\"admin123\"}"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.type").value("urn:problem-type:invalid-credentials"));
+    }
+
+    @Test
+    @DisplayName("POST /auth/login con usuario inactivo (is_active = 0) → 401")
+    void loginWithInactiveUserReturns401() throws Exception {
+        mockMvc.perform(post(LOGIN_URL).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"bloqueado\",\"password\":\"bloqueado123\"}"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.type").value("urn:problem-type:invalid-credentials"));
+    }
+
+    @Test
+    @DisplayName("Token de un usuario que luego se bloquea → 401")
+    void tokenOfInactiveUserReturns401() throws Exception {
+        String token = jwtService.generateToken("bloqueado");
+
+        mockMvc.perform(get(PRODUCTS_URL).header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.detail").value(SecurityProblems.INVALID_TOKEN));
     }
 
     @Test

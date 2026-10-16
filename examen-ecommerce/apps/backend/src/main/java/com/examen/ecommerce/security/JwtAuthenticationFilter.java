@@ -52,6 +52,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             String username = jwtService.validateAndGetUsername(token);
             UserDetails user = userDetailsService.loadUserByUsername(username);
+            if (!user.isEnabled()) {
+                // Usuario bloqueado en app_users después de emitir el token: el token deja de servir
+                throw new UsernameNotFoundException("Usuario inactivo");
+            }
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
             authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
