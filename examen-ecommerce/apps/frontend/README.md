@@ -21,6 +21,14 @@ npm start            # ng serve con proxy.conf.json → http://localhost:4200
 `proxy.conf.json` redirige `/api` a `http://localhost:8080`, así no se necesita CORS en desarrollo.
 La URL base se cambia en `src/environments/environment*.ts` (`apiUrl`).
 
+## Autenticación (JWT)
+El backend exige `Authorization: Bearer <token>` en todo `/api/v1` salvo el login. `src/app/services/auth.interceptor.ts` lo resuelve sin pantalla de login:
+- `AuthTokenStore` llama a `POST /api/v1/auth/login` con un usuario de demostración del seed (`app_users`) y guarda el token **en memoria** (no en `localStorage`). Lo renueva 30 s antes de que expire.
+- `authInterceptor` (registrado en `app.config.ts`) añade el encabezado a las llamadas a `environment.apiUrl`. Ante un 401 descarta el token, pide uno nuevo y reintenta una sola vez.
+- El login usa `HttpBackend` para no pasar por el propio interceptor.
+
+Pendiente: las credenciales de demostración están fijas en `auth.interceptor.ts`; no hay pantalla de login ni manejo de usuarios.
+
 ## Pruebas unitarias (Vitest)
 ```bash
 npm test -- --watch=false
@@ -35,7 +43,7 @@ npm test -- --watch=false
 ```
 src/app
 ├─ models/        ProductResponse, CartRequest, CartQuoteResponse, OrderResponse, ApiProblem
-├─ services/      ProductService, CartService (signals + recotización automática), OrderService, http-error.util
+├─ services/      ProductService, CartService (signals + recotización automática), OrderService, auth.interceptor (JWT), http-error.util
 └─ components/    product-list, cart, coupon-form, discount-summary, cap-alert, order-confirmation
 ```
 

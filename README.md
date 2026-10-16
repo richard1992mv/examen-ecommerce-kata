@@ -15,10 +15,15 @@ MVP Full Stack de un módulo de checkout para e-commerce, desarrollado como prue
 - **HU4:** Alerta visual al alcanzar el tope del 35 %.
 
 ### Estructura
-- `apps/backend/` – API REST con el motor de descuentos.
-- `apps/frontend/` – Interfaz angular del carrito y checkout..
+Todo el proyecto está en `examen-ecommerce/`:
+- `apps/backend/` – API REST (Spring Boot 3.2, MySQL 5.7) con el motor de descuentos y autenticación JWT.
+- `apps/frontend/` – Interfaz Angular del carrito y checkout.
 - `docs/arquitectura.md` – Decisiones de diseño, trade-offs y patrones.
 - `docs/ia.md` – Gobernanza y uso de IA (prompts, agentes, correcciones).
+- `docs/db_kata_ecommerce/` – Scripts SQL, diccionario de datos y diagrama ER.
+- `postman/` – Colección de pruebas de integración (HU1–HU4 con JWT).
+
+Instrucciones de instalación y ejecución en `examen-ecommerce/README.md` y `examen-ecommerce/apps/frontend/README.md`.
 
 ### Requisitos clave
 Tipado estricto, arquitectura modular con al menos dos patrones de diseño y cobertura mínima de pruebas unitarias del 80 %.

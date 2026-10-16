@@ -1,5 +1,7 @@
 # Plan previo a la codificación
 
+> **Estado tras la implementación.** Este documento se conserva como registro del plan original y no describe el código actual. Tras la reducción de alcance (commit `9a8c8a3`) no existen los patrones Strategy, Factory, Adapter ni Observer, ni las clases del plan de pruebas de abajo. Las pruebas reales son 12 clases: unitarias del cálculo y del cupón, `@WebMvcTest` de seguridad y `@SpringBootTest` contra el MySQL local, sin Testcontainers. Además se añadió autenticación JWT con la tabla `app_users`, que no estaba en el plan. Para el estado vigente, ver `arquitectura.md` y la sección 5 del `README.md`.
+
 ## Supuestos
 
 1. El esquema de `01_schema.sql` es la fuente de verdad: no se crean tablas ni columnas.
