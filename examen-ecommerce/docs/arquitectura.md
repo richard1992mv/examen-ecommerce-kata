@@ -2,7 +2,7 @@
 
 ## 1. Por qué MVC por capas
 
-El dominio es pequeño (5 tablas de negocio + `app_users` para autenticación) y su complejidad está en **una** zona: el cálculo de descuentos. Una arquitectura MVC por capas (Controller → Service → Repository) es suficiente, conocida por cualquier equipo Spring y fácil de evaluar. La parte compleja se aísla en `service/discount/` (`DiscountCalculator`), que opera sobre records propios (`DiscountLine` → `DiscountResult`) sin entidades JPA ni repositorios, de modo que el cálculo se prueba sin base de datos. No es Java puro: `DiscountCalculator` es un `@Component` que recibe `DiscountProperties` por constructor.
+El dominio es pequeño (5 tablas de negocio + `app_users` para autenticación) y su complejidad está en **una** zona: el cálculo de descuentos. Una arquitectura MVC por capas (Controller → Service → Repository) es suficiente, conocida por cualquier equipo Spring y fácil de evaluar. La parte compleja se aísla en `service/discount/` (`DiscountCalculator`), que opera sobre records propios (`DiscountLine` → `DiscountResult`) sin entidades JPA ni repositorios, de modo que el cálculo se prueba sin base de datos. No es Java puro: `DiscountCalculator` es un `@Component` que recibe `DiscountProperties` por constructor. Dentro del motor, cada regla de la cascada es una estrategia (`DiscountRule`) creada por `DiscountRuleFactory` (§7).
 
 > **Estado actual.** Una primera versión generada incluía más paquetes (`adapter/`, `event/`, `service/impl/`, CRUD de catálogo y cupones). El commit `9a8c8a3` redujo el código al alcance de las HU1–HU4. Este documento describe el código vigente; lo que se eliminó o sigue pendiente se indica explícitamente.
 
@@ -14,7 +14,7 @@ El dominio es pequeño (5 tablas de negocio + `app_users` para autenticación) y
 | `dto/request`, `dto/response` | Records de entrada/salida. La entrada (`CartRequest`, `CartItemRequest`) no tiene `id`, timestamps ni montos (anti asignación masiva) | Exponer entidades |
 | `dto/validation/` | `@UniqueProductIds` + `UniqueProductIdsValidator` (sin `productId` repetidos en el carrito) | — |
 | `service/` | Casos de uso como clases concretas (sin interfaces): `PricingService`, `OrderService`, `StockService`, `ProductService`, `CartValidator`, `CouponValidator` | Conversión DTO/entidad (mapper), cálculo (motor) |
-| `service/discount/` | Motor de descuentos: `DiscountCalculator`, `DiscountLine`, `DiscountResult` | Importar `entity` o `jakarta.persistence` |
+| `service/discount/` | Motor de descuentos: `DiscountCalculator` (contexto), `DiscountRule` + `CategoryDiscountRule`, `VolumeDiscountRule`, `CouponDiscountRule` (Strategy), `DiscountRuleFactory` (Factory), `DiscountType`, `DiscountLine`, `DiscountResult` | Importar `entity` o `jakarta.persistence` |
 | `mapper/` | `CheckoutMapper`: `DiscountResult` → respuesta de quote, entidad `Order` con snapshots y respuesta de orden; mensaje HU4 | Reglas de negocio |
 | `entity/` | Mapeo JPA fiel a `01_schema.sql` (bases `IdentifiedEntity` y `AuditableEntity`) | Lógica de aplicación |
 | `repository/` | Spring Data JPA, `JOIN FETCH`/`@EntityGraph`, UPDATE atómico de stock | — |
@@ -47,13 +47,13 @@ La tabla `app_users` se añadió para la autenticación JWT (`01_schema.sql` en 
 
 Redondeo **HALF_UP a 2 decimales al final de cada paso**, igual que `02_seed_data.sql`. Todo pasa por `MoneyUtils`.
 
-Las cuatro reglas se aplican en secuencia dentro de `DiscountCalculator.calculate()`; la validez del cupón la decide antes `CouponValidator`.
+`DiscountCalculator.calculate()` recorre en orden las reglas R1–R3 que entrega `DiscountRuleFactory` (cada una descuenta sobre el subtotal que dejó la anterior) y después aplica R4; la validez del cupón la decide antes `CouponValidator`.
 
 | Paso | Regla | Dónde |
 |---|---|---|
-| R1 | Por línea: `line_subtotal × categories.discount_pct`, redondeado por línea. `subtotal_1 = original − categoría` | `DiscountCalculator.applyCategory` |
-| R2 | Si `subtotal_1 > 100.00` (estricto): `subtotal_1 × 5 %` | `DiscountCalculator.calculate` |
-| R3 | Cupón válido (existe, activo, `valid_from ≤ ahora ≤ valid_until`): `subtotal_2 × coupons.discount_pct` | `CouponValidator` + `DiscountCalculator.calculate` |
+| R1 | Por línea: `line_subtotal × categories.discount_pct`, redondeado por línea. `subtotal_1 = original − categoría` | `CategoryDiscountRule` |
+| R2 | Si `subtotal_1 > 100.00` (estricto): `subtotal_1 × 5 %` | `VolumeDiscountRule` |
+| R3 | Cupón válido (existe, activo, `valid_from ≤ ahora ≤ valid_until`): `subtotal_2 × coupons.discount_pct` | `CouponValidator` + `CouponDiscountRule` |
 | R4 | `bruto = R1+R2+R3`; `tope = original × 35 %`; si `bruto > tope` → ajuste `bruto − tope`, `cap_applied = 1` | `DiscountCalculator.calculate` |
 
 `total = original − discount_total`; `effective_discount_pct = discount_total / original × 100`; `discount_cap_pct` = snapshot del tope. Porcentajes y umbral en `discount.volume.pct`, `discount.volume.threshold`, `discount.cap-pct`.
@@ -93,8 +93,8 @@ Todas las rutas bajo `/api/v1` (salvo `POST /auth/login`) pasan antes por `JwtAu
 | Principio | Clase(s) | Cómo se cumple |
 |---|---|---|
 | **S** Responsabilidad única | `CartValidator`, `CouponValidator`, `StockService`, `DiscountCalculator`, `CheckoutMapper`, `OrderNumberGenerator` | Validación del carrito, del cupón, stock, cálculo, conversión y numeración en clases separadas; controllers sin lógica |
-| **O** Abierto/cerrado | `DiscountCalculator`, `DiscountProperties` | Parcial: los porcentajes y el umbral se cambian por configuración o en la BD sin tocar código. Añadir una regla nueva **sí** exige modificar `DiscountCalculator` (no hay abstracción por regla) |
-| **L** Liskov | — | No aplica: no hay jerarquías de reglas intercambiables. Las únicas herencias son las bases de entidades (`IdentifiedEntity`, `AuditableEntity`) |
+| **O** Abierto/cerrado | `DiscountRule`, `DiscountRuleFactory`, `DiscountProperties` | Los porcentajes y el umbral se cambian por configuración o en la BD sin tocar código. Una regla nueva es otra implementación de `DiscountRule` registrada en la fábrica (y un valor en `DiscountType`); el bucle de `DiscountCalculator` no cambia. Si la regla necesita su propio campo en el desglose, también cambian `DiscountResult` y la respuesta |
+| **L** Liskov | `CategoryDiscountRule`, `VolumeDiscountRule`, `CouponDiscountRule` | Las tres reglas son intercambiables para `DiscountCalculator`: todas cumplen el contrato de `DiscountRule` (reciben el subtotal acumulado y devuelven un monto ≥ 0 redondeado) |
 | **I** Segregación | `PricingService`, `StockService`, `CartValidator`, `CouponValidator` | Servicios pequeños por responsabilidad; no existe un `EcommerceService`. No se definen interfaces |
 | **D** Inversión | Todas las clases de `service/`, `security/`, `mapper/` | Inyección por constructor y `DiscountProperties` inyectado. Las dependencias son clases concretas, no interfaces |
 | **DRY** dinero | `MoneyUtils` | Único lugar con `setScale/RoundingMode` (`percentOf`, `ratioAsPercent`, …) |
@@ -104,16 +104,35 @@ Todas las rutas bajo `/api/v1` (salvo `POST /auth/login`) pasan antes por `JwtAu
 
 ## 7. Patrones de diseño
 
-> ⚠️ **Pendiente frente al requisito de la kata (al menos dos patrones).** Los cuatro patrones de la primera versión (tabla siguiente) **no están implementados en el código actual**: se eliminaron en el commit `9a8c8a3`. Se conserva la tabla como diseño de referencia.
+El requisito de la kata (al menos dos patrones de diseño) se cubre con **Strategy** y **Factory** en el motor de descuentos (`service/discount/`), implementados con el alcance mínimo: sin beans adicionales, sin reflexión ni registro dinámico.
 
-| Patrón | Problema que resuelve | Clases (eliminadas) | Alternativa descartada y por qué |
+| Patrón | Problema que resuelve | Clases | Alternativa descartada y por qué |
 |---|---|---|---|
-| **Strategy** | Cada descuento tiene su fórmula y condiciones; deben combinarse en cascada | `DiscountRule` + 3 implementaciones; `DiscountCapPolicy` + `PercentageCapPolicy` | `if/switch` por tipo en un servicio: viola OCP y mezcla responsabilidades |
-| **Factory** | Crear las reglas correctas (con/sin cupón) con parámetros de configuración | `DiscountRuleFactory` (único `new` de reglas) | Beans `@Component` por regla + `List<DiscountRule>` inyectada: la regla de cupón depende del cupón de cada petición, no es un singleton |
-| **Adapter** | Aislar el motor del modelo JPA | `DiscountContextAdapter`, `DiscountResultAdapter` | Pasar entidades al motor: acopla el cálculo a Hibernate (proxies LAZY, cambios de esquema) y exige BD para probar |
-| **Observer** | Auditoría y métricas sin acoplar los servicios | `CartEventPublisher`, `CartEvent` (sealed) + 3 records, `CartAuditListener`, `DiscountMetricsListener` | Llamar logger/métricas desde los servicios: viola SRP; usar listeners para descontar stock: rompe la atomicidad del checkout |
+| **Strategy** | Cada descuento tiene su propia fórmula y condición, pero todos se combinan igual en la cascada | `DiscountRule` (interfaz: `type()` y `calculate(lines, subtotal)`); `CategoryDiscountRule`, `VolumeDiscountRule`, `CouponDiscountRule`. `DiscountCalculator` es el contexto | `if/switch` por tipo o fórmulas en línea dentro del calculador: viola OCP y mezcla las tres reglas en un método |
+| **Factory** | Decidir **qué** reglas aplican (cupón solo si hay uno válido) y **en qué orden** (Categoría → Volumen → Cupón; el orden cambia el resultado) | `DiscountRuleFactory.createRules(couponPct)`: único lugar con `new` de reglas | Beans `@Component` por regla + `List<DiscountRule>` inyectada: la regla de cupón depende del porcentaje de cada petición, no es un singleton, y el orden quedaría implícito |
 
-Lo que sí existe hoy en el código:
+Cómo encajan en `DiscountCalculator.calculate()`:
+
+```java
+for (DiscountRule rule : ruleFactory.createRules(couponPct)) {
+    BigDecimal amount = rule.calculate(lines, subtotal);   // Strategy: fórmula de cada regla
+    amounts.put(rule.type(), amount);                       // DiscountType → campo del desglose
+    subtotal = MoneyUtils.subtract(subtotal, amount);       // cascada multiplicativa
+}
+```
+
+Decisiones de alcance:
+
+- **El tope (R4) no es una estrategia.** No es un paso de la cascada sino un límite sobre la suma de R1–R3, por eso se resuelve en `DiscountCalculator` (la primera versión tenía además `DiscountCapPolicy`; se descartó por no tener más de una implementación).
+- **La fábrica no es un bean de Spring.** `DiscountCalculator` la crea en su constructor a partir de `DiscountProperties`, por eso su constructor y la firma de `calculate()` no cambiaron (`PricingService` y las pruebas existentes siguen igual). Las reglas sin estado por petición (categoría y volumen) se crean una vez; la de cupón, en cada cálculo.
+- **Las reglas son `final` y visibles solo dentro del paquete**; fuera de `service/discount/` solo se usa `DiscountCalculator`.
+- `CategoryDiscountRule.discountFor(line)` también la usa el calculador para el desglose por línea (`LineResult`), de modo que la fórmula de categoría vive en un solo lugar.
+
+Pruebas: `CategoryDiscountTest`, `VolumeDiscountTest`, `CouponDiscountTest` y `DiscountCapTest` verifican cada regla a través del calculador; `DiscountRuleFactoryTest` verifica el orden de las reglas con y sin cupón y que la regla de cupón usa el porcentaje de la petición.
+
+Los patrones **Adapter** (`DiscountContextAdapter`, `DiscountResultAdapter`) y **Observer** (`CartEventPublisher` y listeners) de la primera versión se eliminaron en `9a8c8a3` y no se recuperan: los records `DiscountLine`/`DiscountResult` ya aíslan el motor de JPA, y la auditoría por eventos no la pide ninguna HU.
+
+Otros elementos de diseño presentes en el código:
 
 | Elemento | Clases | Observación |
 |---|---|---|
@@ -121,8 +140,6 @@ Lo que sí existe hoy en el código:
 | **Mapper / DTO** | `CheckoutMapper`, `ProductResponse.from` | Separa entidades y contrato HTTP |
 | **Template Method de Spring** | `TransactionTemplate` en `OrderService` | Una transacción nueva por intento de checkout, para poder reintentar fuera de ella |
 | **Filtro de cadena (Spring Security)** | `JwtAuthenticationFilter` en `SecurityConfig` | Autenticación por token antes de los controllers |
-
-Si se decide recuperar Strategy + Factory, el punto de extensión natural es `DiscountCalculator.calculate()`, que hoy aplica las cuatro reglas en secuencia.
 
 ## 8. `ddl-auto=validate` con columnas UNSIGNED
 

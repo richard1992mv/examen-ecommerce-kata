@@ -1,6 +1,6 @@
 # Plan previo a la codificación
 
-> **Estado tras la implementación.** Este documento se conserva como registro del plan original y no describe el código actual. Tras la reducción de alcance (commit `9a8c8a3`) no existen los patrones Strategy, Factory, Adapter ni Observer, ni las clases del plan de pruebas de abajo. Las pruebas reales son 12 clases: unitarias del cálculo y del cupón, `@WebMvcTest` de seguridad y `@SpringBootTest` contra el MySQL local, sin Testcontainers. Además se añadió autenticación JWT con la tabla `app_users`, que no estaba en el plan. Para el estado vigente, ver `arquitectura.md` y la sección 5 del `README.md`.
+> **Estado tras la implementación.** Este documento se conserva como registro del plan original y no describe el código actual. Tras la reducción de alcance (commit `9a8c8a3`) no existen los patrones Adapter ni Observer, ni la mayoría de las clases del plan de pruebas de abajo. Strategy (`DiscountRule` y tres reglas, sin `DiscountCapPolicy`) y Factory (`DiscountRuleFactory`) se reintrodujeron después con alcance mínimo (ver `arquitectura.md` §7). Las pruebas reales son 13 clases: unitarias del cálculo, de la fábrica de reglas y del cupón, `@WebMvcTest` de seguridad y `@SpringBootTest` contra el MySQL local, sin Testcontainers. Además se añadió autenticación JWT con la tabla `app_users`, que no estaba en el plan. Para el estado vigente, ver `arquitectura.md` y la sección 5 del `README.md`.
 
 ## Supuestos
 

@@ -11,13 +11,13 @@
 
 El primer código generado por el prompt de desarrollador senior (`b5259c1`) incluía mucho más de lo que pedían las historias de usuario: CRUD de categorías, productos y cupones, consulta de órdenes, paginación, paquetes `adapter/` y `event/` (Observer con métricas), `service/impl/` con interfaces, `Clock` inyectado y validadores adicionales. En `9a8c8a3` se limitó el código a las HU1–HU4 y a los casos de negocio.
 
-Consecuencia que debe revisarse: con esa reducción también se eliminaron los patrones Strategy, Factory, Adapter y Observer, que cubrían el requisito de "al menos dos patrones de diseño" (ver `arquitectura.md` §7). La documentación no se actualizó en ese momento.
+Consecuencia: con esa reducción también se eliminaron los patrones Strategy, Factory, Adapter y Observer, que cubrían el requisito de "al menos dos patrones de diseño", y la documentación no se actualizó en ese momento. Corrección posterior con Claude Code: se reintrodujeron solo **Strategy** (una clase por regla de descuento) y **Factory** (`DiscountRuleFactory`), sin sobreingeniería (sin beans extra, sin política de tope separada), manteniendo la API de `DiscountCalculator` y pasando todas las pruebas existentes sin modificarlas (ver `arquitectura.md` §7).
 
 ## Errores típicos de IA detectados y corregidos
 
 | Error típico | Por qué está mal | Corrección en este proyecto |
 |---|---|---|
-| **Sumar porcentajes** (5 % + 15 % = 20 % sobre el mismo subtotal) | El negocio es cascada multiplicativa: cada paso se aplica sobre el subtotal anterior. En el caso (c), sumar daría 24.20 en vez de 23.29 | `DiscountCalculator` encadena `subtotal1` → `subtotal2`; prueba `CouponDiscountTest` ("Se calcula sobre el subtotal tras la regla 2, no sobre el original") |
+| **Sumar porcentajes** (5 % + 15 % = 20 % sobre el mismo subtotal) | El negocio es cascada multiplicativa: cada paso se aplica sobre el subtotal anterior. En el caso (c), sumar daría 24.20 en vez de 23.29 | `DiscountCalculator` pasa a cada `DiscountRule` el subtotal que dejó la anterior; prueba `CouponDiscountTest` ("Se calcula sobre el subtotal tras la regla 2, no sobre el original") |
 | **Usar `double`** | Errores binarios de punto flotante (0.1 + 0.2 ≠ 0.3) | Solo `BigDecimal`; columnas DECIMAL; `MoneyUtils` |
 | **Redondear solo al final** | El seed redondea en cada paso: 83.505 → 83.51 antes de sumar; redondear al final cambia centavos | `percentOf` redondea HALF_UP a 2 decimales en cada regla y cada línea |
 | **Aplicar el tope sobre el total con descuento** | El tope es el 35 % del `subtotal_original` (320 × 35 % = 112.00), no del total ya descontado | `DiscountCalculator`: `cap = percentOf(original, capPct)`; prueba `DiscountCapTest` |

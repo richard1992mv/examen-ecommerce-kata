@@ -60,7 +60,7 @@ Layered MVC in `com.examen.ecommerce`: `controller` → `service` → `repositor
 - `POST /api/v1/orders` (HU3) → `OrderService.checkout()`: each attempt runs in its own `TransactionTemplate` transaction (price → atomic stock `UPDATE` via `StockService.decrement` → generate `ORD-yyyy-NNNNNN` → `saveAndFlush`). A collision on the `uk_orders_order_number` UNIQUE constraint triggers a bounded retry (`order.number.max-attempts`). Stock decrement is all-or-nothing.
 - Orders/order_items store snapshots (product name, category, unit price, coupon) and are immutable.
 
-`DiscountCalculator` (`service/discount/`) is pure computation over `DiscountLine` → `DiscountResult`; all money math goes through `util/MoneyUtils`.
+`DiscountCalculator` (`service/discount/`) is pure computation over `DiscountLine` → `DiscountResult`; all money math goes through `util/MoneyUtils`. It implements the kata's two required patterns: **Strategy** (`DiscountRule` interface with package-private `CategoryDiscountRule`, `VolumeDiscountRule`, `CouponDiscountRule`; `DiscountType` maps each amount to its breakdown field) and **Factory** (`DiscountRuleFactory.createRules(couponPct)`, the only place rules are instantiated and their cascade order is fixed). The calculator loops over the rules passing the running subtotal, then applies the cap itself (the cap is not a rule). The factory is not a Spring bean: `DiscountCalculator(DiscountProperties)` builds it, so its constructor/`calculate()` signature are unchanged.
 
 **Security:** stateless JWT HS256. `POST /api/v1/auth/login` and Swagger paths are public; everything else requires `Authorization: Bearer`. Users are loaded from MySQL table `app_users` (BCrypt) via `DatabaseUserDetailsService`. 401/403 are rendered as ProblemDetail by `JwtAuthenticationEntryPoint` / `JwtAccessDeniedHandler`. CORS origins come from `app.cors.allowed-origins`.
 
@@ -68,7 +68,7 @@ Layered MVC in `com.examen.ecommerce`: `controller` → `service` → `repositor
 
 ## Tests
 
-- Pure unit tests: `service/discount/*Test` (calculator), `CouponValidatorTest`, `DatabaseUserDetailsServiceTest`.
+- Pure unit tests: `service/discount/*Test` (calculator and `DiscountRuleFactoryTest`), `CouponValidatorTest`, `DatabaseUserDetailsServiceTest`.
 - `SecurityIntegrationTest` is a `@WebMvcTest` with mocked repositories (no DB).
 - `CheckoutOrderTest`, `CouponBreakdownTest`, `ProductCatalogTest`, `DiscountCapAlertTest`, `AuthLoginDatabaseTest` are `@SpringBootTest` with **`@ActiveProfiles("dev")`** — they hit the **local MySQL dev database** with the seed loaded, and are `@Transactional` so they roll back. MySQL must be running for `mvn verify` to pass. Expected amounts in these tests are tied to the seed cases (e.g. case (c) `130.00 − 32.29 = 97.71`, case (d) with coupon `TESTCAP30` hits the cap).
 - Frontend: only `cart.service.spec.ts`.
@@ -79,4 +79,4 @@ No router; `app.ts` composes the components (`product-list`, `cart`, `coupon-for
 
 ## Known gaps vs. kata requirements
 
-Documented as pending in `docs/arquitectura.md` §7/§11 and `examen-ecommerce/README.md` §4–§5: the Strategy/Factory/Adapter/Observer classes were removed in commit `9a8c8a3` (the docs keep them as reference design only), there is no JaCoCo coverage check, no injected `Clock`, Testcontainers is declared in the pom but unused, DB credentials are hardcoded in `application.properties`, and no route enforces roles. `docs/plan.md` is the original pre-coding plan and does not describe the current code. When docs and code disagree, the code is authoritative.
+Documented as pending in `docs/arquitectura.md` §7/§11 and `examen-ecommerce/README.md` §4–§5: the Adapter/Observer classes were removed in commit `9a8c8a3` and are not coming back (Strategy/Factory were later reintroduced in minimal form, see above), there is no JaCoCo coverage check, no injected `Clock`, Testcontainers is declared in the pom but unused, DB credentials are hardcoded in `application.properties`, and no route enforces roles. `docs/plan.md` is the original pre-coding plan and does not describe the current code. When docs and code disagree, the code is authoritative.

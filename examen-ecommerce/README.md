@@ -88,7 +88,7 @@ Tipos de prueba:
 
 | Tipo | Clases | Infraestructura |
 |---|---|---|
-| Unitarias | `CategoryDiscountTest`, `VolumeDiscountTest`, `CouponDiscountTest`, `DiscountCapTest`, `CouponValidatorTest`, `DatabaseUserDetailsServiceTest` | Ninguna |
+| Unitarias | `CategoryDiscountTest`, `VolumeDiscountTest`, `CouponDiscountTest`, `DiscountCapTest`, `DiscountRuleFactoryTest`, `CouponValidatorTest`, `DatabaseUserDetailsServiceTest` | Ninguna |
 | Web + seguridad | `SecurityIntegrationTest` | `@WebMvcTest` con repositorios simulados |
 | Con BD | `ProductCatalogTest`, `CouponBreakdownTest`, `CheckoutOrderTest`, `DiscountCapAlertTest`, `AuthLoginDatabaseTest` | `@SpringBootTest` + perfil `dev` contra el MySQL local; `@Transactional` deshace los cambios al terminar |
 
@@ -115,7 +115,7 @@ Spring Security con JWT HS256 sin estado. Los usuarios se leen de la tabla `app_
 
 ## 8. Commits sugeridos por incremento
 
-> Plan original de incrementos. Algunos elementos (Testcontainers, Strategy/Factory/Adapter, Observer) no forman parte del código actual; ver `docs/arquitectura.md` §7.
+> Plan original de incrementos. Algunos elementos (Testcontainers, Adapter, Observer) no forman parte del código actual. El motor sí usa Strategy + Factory; ver `docs/arquitectura.md` §7.
 
 ```
 chore(backend): pom, perfiles y configuración base (Boot 3.2.12, MySQL 5.7, sin Flyway)
