@@ -1,0 +1,94 @@
+# .gitignore del monorepo. El frontend tiene además su propio .gitignore (generado por Angular CLI).
+# Regla general: no se versiona nada que se pueda regenerar (builds, dependencias) ni datos locales
+# (configuración del IDE, logs, secretos).
+
+# ---------------------------------------------------------------------------
+# Java / Maven (backend)
+# ---------------------------------------------------------------------------
+target/
+*.class
+*.jar
+*.war
+*.ear
+hs_err_pid*.log
+replay_pid*.log
+# Wrapper de Maven: se versiona el script, no la distribución descargada
+.mvn/wrapper/maven-wrapper.jar
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+release.properties
+dependency-reduced-pom.xml
+
+# ---------------------------------------------------------------------------
+# Node / Angular (frontend)
+# ---------------------------------------------------------------------------
+node_modules/
+dist/
+.angular/
+coverage/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ---------------------------------------------------------------------------
+# IDEs y editores
+# ---------------------------------------------------------------------------
+# Eclipse / Spring Tools
+.classpath
+.project
+.settings/
+.factorypath
+.metadata/
+.apt_generated/
+.apt_generated_tests/
+.sts4-cache/
+.springBeans
+bin/
+*.launch
+# IntelliJ IDEA
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+# NetBeans
+nbproject/private/
+nbbuild/
+nbdist/
+.nb-gradle/
+# VS Code: se permiten solo los archivos compartibles
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.history/
+
+# ---------------------------------------------------------------------------
+# Secretos y configuración local
+# ---------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.local.properties
+application-local.properties
+application-local.yml
+
+# ---------------------------------------------------------------------------
+# Logs y temporales
+# ---------------------------------------------------------------------------
+logs/
+*.log
+*.tmp
+*.bak
+*.swp
+*~
+
+# ---------------------------------------------------------------------------
+# Sistema operativo
+# ---------------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
