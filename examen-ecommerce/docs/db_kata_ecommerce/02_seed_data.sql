@@ -1,7 +1,7 @@
 -- =====================================================================
 -- 02_seed_data.sql
 -- Datos de ejemplo en orden de dependencias:
--- categories -> products -> coupons -> orders -> order_items
+-- categories -> products -> coupons -> orders -> order_items -> app_users
 -- Redondeo HALF_UP a 2 decimales al final de cada paso.
 -- Nota: el stock de products representa el estado ACTUAL (posterior a las
 -- órdenes históricas de ejemplo).
@@ -127,5 +127,16 @@ INSERT INTO order_items (
   (7, 4,  4, 'Monitor 24 pulgadas',   'Tecnología', 150.00, 1, 150.00, 15.00, 135.00),
   (8, 4, 12, 'Smartwatch',            'Tecnología', 120.00, 1, 120.00, 12.00, 108.00),
   (9, 4, 10, 'Balón de fútbol',       'Deportes',    25.00, 2,  50.00,  0.00,  50.00);
+
+-- ---------------------------------------------------------------------
+-- app_users (contraseñas cifradas con BCrypt, costo 10)
+--   admin / admin123         -> ADMIN, activo
+--   cliente / cliente123     -> USER,  activo
+--   bloqueado / bloqueado123 -> USER,  inactivo (login debe responder 401)
+-- ---------------------------------------------------------------------
+INSERT INTO app_users (id, username, password_hash, role, is_active) VALUES
+  (1, 'admin',     '$2a$10$M6EUsAoIsb.FqakWs3EA9Oy0Xk6buEkxEvmuyWxKLqebYGBPBI1uS', 'ADMIN', 1),
+  (2, 'cliente',   '$2a$10$xVl5n.O4TQQDhvFT6xO4vO3EEPxULKUelFlzONTjEH027z8Yort0m', 'USER',  1),
+  (3, 'bloqueado', '$2a$10$mOYFj9adPRvGIoO2grdl8eMjsGhidhPV83hGpANiJGriJXo.dgSDi', 'USER',  0);
 
 COMMIT;

@@ -7,12 +7,13 @@
 SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE kata_ecommerce;
 
--- 1. Conteos por tabla (esperado: 4, 12, 4, 4, 9)
+-- 1. Conteos por tabla (esperado: 4, 12, 4, 4, 9, 3)
 SELECT 'categories'  AS tabla, COUNT(*) AS filas FROM categories
 UNION ALL SELECT 'products',    COUNT(*) FROM products
 UNION ALL SELECT 'coupons',     COUNT(*) FROM coupons
 UNION ALL SELECT 'orders',      COUNT(*) FROM orders
-UNION ALL SELECT 'order_items', COUNT(*) FROM order_items;
+UNION ALL SELECT 'order_items', COUNT(*) FROM order_items
+UNION ALL SELECT 'app_users',   COUNT(*) FROM app_users;
 
 -- 2. Productos con stock 0 (esperado: Cargador USB-C)
 SELECT p.id, p.name, c.name AS categoria, p.stock
@@ -121,3 +122,17 @@ SELECT o.id, o.order_number
 FROM orders o
 LEFT JOIN order_items oi ON oi.order_id = o.id
 WHERE oi.id IS NULL;
+
+-- 8. Usuarios con contraseña que no es un hash BCrypt válido (esperado: 0 filas)
+SELECT id, username
+FROM app_users
+WHERE (password_hash NOT LIKE '$2a$%'
+       AND password_hash NOT LIKE '$2b$%'
+       AND password_hash NOT LIKE '$2y$%')
+   OR CHAR_LENGTH(password_hash) <> 60;
+
+-- 9. Usuarios activos que pueden obtener token (esperado: admin, cliente)
+SELECT id, username, role, is_active
+FROM app_users
+WHERE is_active = 1
+ORDER BY id;

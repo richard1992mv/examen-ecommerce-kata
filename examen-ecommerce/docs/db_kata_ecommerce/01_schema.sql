@@ -1,7 +1,7 @@
 -- =====================================================================
 -- 01_schema.sql
 -- Tablas, PK, FK, UNIQUE e índices. MySQL 5.7.44 / InnoDB / utf8mb4.
--- Solo 5 tablas: categories, products, coupons, orders, order_items.
+-- 6 tablas: categories, products, coupons, orders, order_items y app_users (seguridad JWT).
 -- Sin JSON, CHECK, columnas generadas, triggers ni procedimientos.
 -- =====================================================================
 
@@ -15,6 +15,7 @@ DROP TABLE IF EXISTS orders;
 DROP TABLE IF EXISTS products;
 DROP TABLE IF EXISTS coupons;
 DROP TABLE IF EXISTS categories;
+DROP TABLE IF EXISTS app_users;
 
 -- ---------------------------------------------------------------------
 -- categories
@@ -122,3 +123,19 @@ CREATE TABLE order_items (
     ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   COMMENT='Líneas de la orden con valores históricos';
+
+-- ---------------------------------------------------------------------
+-- app_users (usuarios que pueden obtener un token JWT en /api/v1/auth/login)
+-- ---------------------------------------------------------------------
+CREATE TABLE app_users (
+  id            INT UNSIGNED      NOT NULL AUTO_INCREMENT COMMENT 'Identificador del usuario',
+  username      VARCHAR(50)       NOT NULL                COMMENT 'Nombre de usuario único (login)',
+  password_hash VARCHAR(100)      NOT NULL                COMMENT 'Contraseña cifrada con BCrypt (nunca texto plano)',
+  role          VARCHAR(30)       NOT NULL DEFAULT 'USER' COMMENT 'Rol sin prefijo ROLE_ (USER, ADMIN)',
+  is_active     TINYINT(1) UNSIGNED NOT NULL DEFAULT 1    COMMENT '1 = puede iniciar sesión, 0 = bloqueado',
+  created_at    DATETIME          NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Fecha de creación del registro',
+  updated_at    DATETIME          NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Fecha de última actualización',
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_app_users_username (username)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  COMMENT='Usuarios de la API (autenticación JWT)';
