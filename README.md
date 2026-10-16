@@ -27,3 +27,11 @@ Instrucciones de instalación y ejecución en `examen-ecommerce/README.md` y `ex
 
 ### Requisitos clave
 Tipado estricto, arquitectura modular con al menos dos patrones de diseño y cobertura mínima de pruebas unitarias del 80 %.
+
+### Pruebas y cobertura (mínimo 80 %, verificado en el build)
+| Proyecto | Comando | Reporte |
+|---|---|---|
+| Backend (`examen-ecommerce/apps/backend`) | `mvn clean verify` (requiere MySQL local con el seed) | `target/site/jacoco/index.html` |
+| Frontend (`examen-ecommerce/apps/frontend`) | `npm run test:coverage` | `coverage/frontend/index.html` |
+
+Ambos comandos fallan si la cobertura baja del 80 %. Detalle en `examen-ecommerce/README.md` §5 y `examen-ecommerce/apps/frontend/README.md`.

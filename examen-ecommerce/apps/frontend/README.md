@@ -36,10 +36,16 @@ Pendiente: las credenciales de demostración están fijas en `auth.interceptor.t
 - Uso justificado de `unknown`: los errores de RxJS y de `Promise.catch` no están tipados, así que se reciben como `unknown` y se acotan con `instanceof HttpErrorResponse`. El body del error (`HttpErrorResponse.error`, declarado `any` por Angular) se acota a `ApiProblem` con la guarda de tipo `isApiProblem` en `http-error.util.ts`.
 - `CartService` modela el resultado de cada cotización como una unión discriminada (`QuoteOutcome`), sin `null` casteado.
 
-## Pruebas unitarias (Vitest)
+## Pruebas unitarias (Vitest) y cobertura
 ```bash
-npm test -- --watch=false
+npm test -- --watch=false     # ejecuta las pruebas una vez
+npm run test:coverage         # pruebas + cobertura; falla si algún indicador baja del 80 %
 ```
+
+- 12 archivos de prueba (55 pruebas): servicios (`CartService`, `ProductService`, `OrderService`), `authInterceptor`, `toErrorMessage` y todos los componentes, con `HttpTestingController` (sin backend real). Los datos de prueba compartidos están en `src/app/testing/fixtures.ts`.
+- La cobertura usa `@vitest/coverage-v8` y se configura en `angular.json` → `test.options`: incluye **todo** `src/app/**/*.ts` (no solo los archivos que importan las pruebas) y excluye los specs, `testing/`, las interfaces de `models/`, el reexport de `icons.ts` y `app.config.ts`. `coverageThresholds` exige el 80 % en sentencias, ramas, funciones y líneas.
+- Reporte en consola y HTML en `coverage/frontend/index.html` (además de `lcov.info` para CI).
+- Cobertura actual: **sentencias 99.3 %, ramas 96.6 %, funciones 100 %, líneas 99.0 %**.
 
 ## Estilos e íconos
 - Bootstrap: solo CSS, cargado en `angular.json` → `styles` (`node_modules/bootstrap/dist/css/bootstrap.min.css`). No se usa el JS de Bootstrap.

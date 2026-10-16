@@ -27,7 +27,7 @@ Everything lives under `examen-ecommerce/`:
 
 Backend (run from `examen-ecommerce/apps/backend`):
 ```bash
-mvn clean verify                                   # compile + all tests
+mvn clean verify                                   # compile + all tests + JaCoCo check (≥ 80 % lines/instructions/branches)
 mvn test -Dtest=DiscountCapTest                    # single test class
 mvn test -Dtest=CheckoutOrderTest#methodName       # single test method
 mvn spring-boot:run                                # starts on :8080 with profile dev
@@ -40,6 +40,7 @@ npm install
 npm start                          # ng serve on :4200; proxy.conf.json forwards /api → localhost:8080
 npm run build
 npm test -- --watch=false          # Vitest
+npm run test:coverage              # Vitest + v8 coverage; fails below 80 % (thresholds in angular.json)
 npx prettier --write src           # formatting (.prettierrc)
 ```
 
@@ -71,7 +72,9 @@ Layered MVC in `com.examen.ecommerce`: `controller` → `service` → `repositor
 - Pure unit tests: `service/discount/*Test` (calculator and `DiscountRuleFactoryTest`), `CouponValidatorTest`, `DatabaseUserDetailsServiceTest`.
 - `SecurityIntegrationTest` is a `@WebMvcTest` with mocked repositories (no DB).
 - `CheckoutOrderTest`, `CouponBreakdownTest`, `ProductCatalogTest`, `DiscountCapAlertTest`, `AuthLoginDatabaseTest` are `@SpringBootTest` with **`@ActiveProfiles("dev")`** — they hit the **local MySQL dev database** with the seed loaded, and are `@Transactional` so they roll back. MySQL must be running for `mvn verify` to pass. Expected amounts in these tests are tied to the seed cases (e.g. case (c) `130.00 − 32.29 = 97.71`, case (d) with coupon `TESTCAP30` hits the cap).
-- Frontend: only `cart.service.spec.ts`.
+- Pure unit tests also cover `CartValidatorTest` and `IdentifiedEntityTest`; `OrderServiceRetryTest` uses Mockito for the `order_number` collision retry.
+- Coverage is a build gate on both sides (≥ 80 %): JaCoCo `check` in `mvn verify` (excludes only `EcommerceApplication`), and `coverageThresholds` in `angular.json` over all of `src/app` (excludes specs, `testing/`, `models/`, `icons.ts`, `app.config.ts`). New code needs tests or the build goes red.
+- Frontend: a spec per service, interceptor and component; shared data in `src/app/testing/fixtures.ts`; HTTP via `HttpTestingController`.
 
 ## Frontend architecture
 
@@ -79,4 +82,4 @@ No router; `app.ts` composes the components (`product-list`, `cart`, `coupon-for
 
 ## Known gaps vs. kata requirements
 
-Documented as pending in `docs/arquitectura.md` §7/§11 and `examen-ecommerce/README.md` §4–§5: the Adapter/Observer classes were removed in commit `9a8c8a3` and are not coming back (Strategy/Factory were later reintroduced in minimal form, see above), there is no JaCoCo coverage check, the DB tests still use the real clock (so they depend on `WELCOME2026` not having expired), Testcontainers is declared in the pom but unused, DB credentials are hardcoded in `application.properties`, and no route enforces roles. `docs/plan.md` is the original pre-coding plan and does not describe the current code. When docs and code disagree, the code is authoritative.
+Documented as pending in `docs/arquitectura.md` §7/§11 and `examen-ecommerce/README.md` §4–§5: the Adapter/Observer classes were removed in commit `9a8c8a3` and are not coming back (Strategy/Factory were later reintroduced in minimal form, see above), the DB tests still use the real clock (so they depend on `WELCOME2026` not having expired), Testcontainers is declared in the pom but unused, DB credentials are hardcoded in `application.properties`, and no route enforces roles. `docs/plan.md` is the original pre-coding plan and does not describe the current code. When docs and code disagree, the code is authoritative.

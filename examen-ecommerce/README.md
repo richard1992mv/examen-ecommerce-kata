@@ -70,7 +70,8 @@ Toda la configuración está en `src/main/resources/application.properties` (com
 ## 5. Compilar, probar y ejecutar
 
 ```bash
-# Compila y ejecuta todas las pruebas (requiere MySQL local con el seed cargado)
+# Compila, ejecuta todas las pruebas, genera el reporte de cobertura y verifica el mínimo del 80 %
+# (requiere MySQL local con el seed cargado)
 mvn clean verify
 
 # Una sola clase o un solo método
@@ -88,13 +89,25 @@ Tipos de prueba:
 
 | Tipo | Clases | Infraestructura |
 |---|---|---|
-| Unitarias | `CategoryDiscountTest`, `VolumeDiscountTest`, `CouponDiscountTest`, `DiscountCapTest`, `DiscountRuleFactoryTest`, `CouponValidatorTest`, `DatabaseUserDetailsServiceTest` | Ninguna |
+| Unitarias | `CategoryDiscountTest`, `VolumeDiscountTest`, `CouponDiscountTest`, `DiscountCapTest`, `DiscountRuleFactoryTest`, `CouponValidatorTest`, `CartValidatorTest`, `IdentifiedEntityTest`, `DatabaseUserDetailsServiceTest` | Ninguna |
+| Unitarias con dobles | `OrderServiceRetryTest` (reintento por colisión de `order_number`) | Mockito |
 | Web + seguridad | `SecurityIntegrationTest` | `@WebMvcTest` con repositorios simulados |
 | Con BD | `ProductCatalogTest`, `CouponBreakdownTest`, `CheckoutOrderTest`, `DiscountCapAlertTest`, `AuthLoginDatabaseTest` | `@SpringBootTest` + perfil `dev` contra el MySQL local; `@Transactional` deshace los cambios al terminar |
 
 La hora se inyecta como `Clock` (`config/TimeConfig`). Las pruebas unitarias de `CouponValidatorTest` usan un reloj fijo, pero las pruebas con BD usan el reloj real del bean: dependen de la fecha actual porque `WELCOME2026` vence el 2026-12-31.
 
-> Pendiente: el requisito de cobertura mínima del 80 % **no se mide** hoy (el `pom.xml` no incluye JaCoCo).
+### Cobertura (JaCoCo)
+
+`mvn clean verify` ejecuta las pruebas unitarias y de integración con el agente de JaCoCo (`jacoco-maven-plugin` 0.8.12) y **falla si la cobertura del módulo baja del 80 %** en líneas, instrucciones o ramas (`jacoco:check`, propiedad `jacoco.minimum.coverage` del `pom.xml`). Solo se excluye `EcommerceApplication` (el `main` que arranca Spring).
+
+```bash
+mvn clean verify                 # pruebas + reporte + verificación del 80 %
+mvn clean test jacoco:report     # solo pruebas y reporte, sin verificar el mínimo
+```
+
+Reporte HTML: `target/site/jacoco/index.html` (también `jacoco.xml` y `jacoco.csv` para herramientas de CI).
+
+Cobertura actual (104 pruebas): **líneas 95.5 %, instrucciones 94.0 %, ramas 84.9 %, métodos 91.6 %**.
 
 ## 6. Endpoints (`/api/v1`)
 
