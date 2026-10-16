@@ -1,0 +1,1876 @@
+{
+ "info": {
+  "_postman_id": "6ce062f1-fb0f-4351-b3cb-551c55e653af",
+  "name": "KATA E-Commerce · Pruebas de integración HU1–HU4 (JWT)",
+  "description": "Pruebas de integración contra el backend (perfil dev, MySQL kata_ecommerce con 01 y 02 cargados).\n\nEjecutar con Collection Runner en orden. ATENCIÓN: los checkout (HU3-02, HU3-12 y HU4-06) crean órdenes reales y descuentan stock en MySQL. Por corrida consumen: Audífonos ×4, Libro ×2, Monitor ×1, Smartwatch ×1, Balón ×2. Con el seed alcanzan ~8 corridas completas (límite: Smartwatch, stock 8). Para reiniciar, vuelve a cargar 01_schema.sql y 02_seed_data.sql.\n\nCupones vigentes hasta 2026-12-31 (WELCOME2026, TESTCAP30).\n\nSEGURIDAD JWT: ejecutar primero la carpeta 'AUTH · JWT'. El login guarda {{token}} y todas las peticiones heredan 'Bearer {{token}}' desde la colección. Credenciales en las variables username/password.",
+  "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+ },
+ "item": [
+  {
+   "name": "AUTH · JWT",
+   "description": "Seguridad del API (Spring Security + JWT). Ejecutar antes de HU1–HU4.",
+   "item": [
+    {
+     "name": "AUTH-01 · Sin token → 401",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test(\"Status 401 sin token\", () => pm.response.to.have.status(401));"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "GET",
+      "header": [],
+      "url": {
+       "raw": "{{baseUrl}}/products",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "products"
+       ]
+      },
+      "auth": {
+       "type": "noauth"
+      }
+     }
+    },
+    {
+     "name": "AUTH-02 · Token inválido → 401",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test(\"Status 401 con token inválido\", () => pm.response.to.have.status(401));"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/cart/quote",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "cart",
+        "quote"
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"items\": [\n    {\n      \"productId\": 1,\n      \"quantity\": 1\n    }\n  ],\n  \"couponCode\": null\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      },
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "token.invalido.xyz",
+         "type": "string"
+        }
+       ]
+      }
+     }
+    },
+    {
+     "name": "AUTH-03 · Credenciales incorrectas → 401",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test(\"Status 401 credenciales inválidas\", () => pm.response.to.have.status(401));"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/auth/login",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "auth",
+        "login"
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"incorrecta\"\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      },
+      "auth": {
+       "type": "noauth"
+      }
+     }
+    },
+    {
+     "name": "AUTH-04 · Login → 200 y guarda token",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+         "const body = pm.response.json();",
+         "pm.test(\"Devuelve accessToken Bearer\", () => {",
+         "    pm.expect(body.accessToken).to.be.a(\"string\").and.not.empty;",
+         "    pm.expect(body.tokenType).to.eql(\"Bearer\");",
+         "    pm.expect(body.expiresIn).to.be.above(0);",
+         "});",
+         "pm.collectionVariables.set(\"token\", body.accessToken);"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/auth/login",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "auth",
+        "login"
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      },
+      "auth": {
+       "type": "noauth"
+      }
+     }
+    },
+    {
+     "name": "AUTH-05 · Con token → 200",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test(\"Status 200 con token válido\", () => pm.response.to.have.status(200));"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "GET",
+      "header": [],
+      "url": {
+       "raw": "{{baseUrl}}/products",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "products"
+       ]
+      }
+     }
+    }
+   ]
+  },
+  {
+   "name": "HU1 · Catálogo y subtotal del carrito",
+   "description": "GET /products y subtotal original vía POST /cart/quote (no persiste).",
+   "item": [
+    {
+     "name": "HU1-01 · Listar productos pre-configurados",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+         "",
+         "const products = pm.response.json();",
+         "pm.test(\"Devuelve los 12 productos del seed\", () => pm.expect(products).to.have.lengthOf(12));",
+         "pm.test(\"Cada producto trae id, nombre, precio unitario, categoría y stock\", () => {",
+         "    products.forEach(p => {",
+         "        pm.expect(p).to.have.all.keys(\"id\", \"name\", \"unitPrice\", \"stock\", \"categoryId\", \"categoryName\");",
+         "        pm.expect(p.unitPrice).to.be.above(0);",
+         "        pm.expect(p.stock).to.be.at.least(0);",
+         "    });",
+         "});",
+         "pm.test(\"Ordenados por id (1..12)\", () => pm.expect(products.map(p => p.id)).to.eql([1,2,3,4,5,6,7,8,9,10,11,12]));",
+         "pm.test(\"Datos del seed: Teclado mecánico 80.00 en Tecnología\", () => {",
+         "    const t = products.find(p => p.id === 3);",
+         "    pm.expect(t.name).to.eql(\"Teclado mecánico\");",
+         "    pm.expect(t.unitPrice).to.eql(80);",
+         "    pm.expect(t.categoryId).to.eql(1);",
+         "    pm.expect(t.categoryName).to.eql(\"Tecnología\");",
+         "});",
+         "pm.test(\"Cargador USB-C (id 5) se lista con stock 0\", () => pm.expect(products.find(p => p.id === 5).stock).to.eql(0));",
+         "pm.test(\"Categorías del seed\", () => {",
+         "    pm.expect([...new Set(products.map(p => p.categoryName))].sort()).to.eql([\"Deportes\", \"Hogar\", \"Libros\", \"Tecnología\"]);",
+         "});",
+         "",
+         "const byId = {};",
+         "pm.response.json().forEach(p => byId[p.id] = p.stock);",
+         "[\"1\", \"4\", \"7\", \"9\", \"10\", \"12\"].forEach(id => pm.collectionVariables.set(\"stock_\" + id, byId[id]));",
+         "pm.collectionVariables.set(\"qty7_excess\", byId[7] + 1);"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "GET",
+      "header": [],
+      "url": {
+       "raw": "{{baseUrl}}/products",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "products"
+       ]
+      }
+     }
+    },
+    {
+     "name": "HU1-02 · Agregar Audífonos → subtotal 45.00",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+         "",
+         "pm.test(\"Subtotal original 45.00\", () => pm.expect(pm.response.json().subtotalOriginal).to.eql(45));"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/cart/quote",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "cart",
+        "quote"
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"items\": [{\"productId\": 1, \"quantity\": 1}],\n  \"couponCode\": null\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      }
+     }
+    },
+    {
+     "name": "HU1-03 · Agregar Libro → subtotal 85.00",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+         "",
+         "pm.test(\"Subtotal original 85.00\", () => pm.expect(pm.response.json().subtotalOriginal).to.eql(85));",
+         "pm.test(\"Una línea por producto\", () => pm.expect(pm.response.json().items).to.have.lengthOf(2));"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/cart/quote",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "cart",
+        "quote"
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"items\": [{\"productId\": 1, \"quantity\": 1}, {\"productId\": 9, \"quantity\": 1}],\n  \"couponCode\": null\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      }
+     }
+    },
+    {
+     "name": "HU1-04 · Audífonos ×2 → subtotal 130.00",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+         "",
+         "pm.test(\"Subtotal original 130.00\", () => pm.expect(pm.response.json().subtotalOriginal).to.eql(130));"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/cart/quote",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "cart",
+        "quote"
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"items\": [{\"productId\": 1, \"quantity\": 2}, {\"productId\": 9, \"quantity\": 1}],\n  \"couponCode\": null\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      }
+     }
+    },
+    {
+     "name": "HU1-05 · Remover Libro → subtotal 90.00 (sin descuentos)",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+         "",
+         "const j = pm.response.json();",
+         "pm.test(\"Subtotal original 90.00 (no incluye descuentos)\", () => pm.expect(j.subtotalOriginal).to.eql(90));",
+         "pm.test(\"Total con 10 % de Tecnología: 81.00\", () => pm.expect(j.total).to.eql(81));"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/cart/quote",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "cart",
+        "quote"
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"items\": [{\"productId\": 1, \"quantity\": 2}],\n  \"couponCode\": null\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      }
+     }
+    },
+    {
+     "name": "HU1-06 · Cotizar no modifica el stock",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+         "",
+         "const products = pm.response.json();",
+         "pm.test(\"Stock de Audífonos y Libro sin cambios tras cotizar\", () => {",
+         "    pm.expect(products.find(p => p.id === 1).stock).to.eql(Number(pm.collectionVariables.get(\"stock_1\")));",
+         "    pm.expect(products.find(p => p.id === 9).stock).to.eql(Number(pm.collectionVariables.get(\"stock_9\")));",
+         "});"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "GET",
+      "header": [],
+      "url": {
+       "raw": "{{baseUrl}}/products",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "products"
+       ]
+      }
+     }
+    }
+   ]
+  },
+  {
+   "name": "HU2 · Aplicar cupón y desglose",
+   "description": "POST /cart/quote con cupones de la BD.",
+   "item": [
+    {
+     "name": "HU2-01 · Aplicar WELCOME2026 → desglose completo",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+         "",
+         "pm.test(\"Desglose exacto del caso (c)\", () => {",
+         "    const j = pm.response.json();",
+         "    pm.expect(j.subtotalOriginal).to.eql(130);",
+         "    pm.expect(j.categoryDiscount).to.eql(9);",
+         "    pm.expect(j.volumeDiscount).to.eql(6.05);",
+         "    pm.expect(j.couponDiscount).to.eql(17.24);",
+         "    pm.expect(j.capAdjustment).to.eql(0);",
+         "    pm.expect(j.discountTotal).to.eql(32.29);",
+         "    pm.expect(j.effectiveDiscountPct).to.eql(24.84);",
+         "    pm.expect(j.discountCapPct).to.eql(35);",
+         "    pm.expect(j.total).to.eql(97.71);",
+         "    pm.expect(j.currency).to.eql(\"USD\");",
+         "    pm.expect(j.couponCode).to.eql(\"WELCOME2026\");",
+         "    pm.expect(j.capApplied).to.eql(false);",
+         "    pm.expect(j.message).to.eql(null);",
+         "});",
+         "",
+         "pm.test(\"Ahorro total + valor final = subtotal original\", () => {",
+         "    const j = pm.response.json();",
+         "    pm.expect(Math.round((j.discountTotal + j.total) * 100)).to.eql(Math.round(j.subtotalOriginal * 100));",
+         "});",
+         "pm.test(\"Ahorro = categoría + volumen + cupón (sin tope)\", () => {",
+         "    const j = pm.response.json();",
+         "    pm.expect(Math.round((j.categoryDiscount + j.volumeDiscount + j.couponDiscount) * 100)).to.eql(Math.round(j.discountTotal * 100));",
+         "});"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/cart/quote",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "cart",
+        "quote"
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"items\": [{\"productId\": 1, \"quantity\": 2}, {\"productId\": 9, \"quantity\": 1}],\n  \"couponCode\": \"WELCOME2026\"\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      }
+     }
+    },
+    {
+     "name": "HU2-02 · Desglose por línea",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+         "",
+         "const items = pm.response.json().items;",
+         "pm.test(\"Audífonos: 90.00 − 9.00 = 81.00\", () => {",
+         "    const a = items.find(i => i.productId === 1);",
+         "    pm.expect(a.productName).to.eql(\"Audífonos Bluetooth\");",
+         "    pm.expect(a.categoryName).to.eql(\"Tecnología\");",
+         "    pm.expect(a.lineSubtotal).to.eql(90);",
+         "    pm.expect(a.categoryDiscount).to.eql(9);",
+         "    pm.expect(a.lineTotal).to.eql(81);",
+         "});",
+         "pm.test(\"Libro: sin descuento de categoría\", () => {",
+         "    const l = items.find(i => i.productId === 9);",
+         "    pm.expect(l.categoryDiscount).to.eql(0);",
+         "    pm.expect(l.lineTotal).to.eql(40);",
+         "});"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/cart/quote",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "cart",
+        "quote"
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"items\": [{\"productId\": 1, \"quantity\": 2}, {\"productId\": 9, \"quantity\": 1}],\n  \"couponCode\": \"WELCOME2026\"\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      }
+     }
+    },
+    {
+     "name": "HU2-03 · Mismo carrito sin cupón",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+         "",
+         "const j = pm.response.json();",
+         "pm.test(\"Cupón 0.00, ahorro 15.05 (11.58 %), total 114.95\", () => {",
+         "    pm.expect(j.couponDiscount).to.eql(0);",
+         "    pm.expect(j.discountTotal).to.eql(15.05);",
+         "    pm.expect(j.effectiveDiscountPct).to.eql(11.58);",
+         "    pm.expect(j.total).to.eql(114.95);",
+         "    pm.expect(j.couponCode).to.eql(null);",
+         "});"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/cart/quote",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "cart",
+        "quote"
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"items\": [{\"productId\": 1, \"quantity\": 2}, {\"productId\": 9, \"quantity\": 1}],\n  \"couponCode\": null\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      }
+     }
+    },
+    {
+     "name": "HU2-04 · Carrito pequeño (caso a) + WELCOME2026",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+         "",
+         "const j = pm.response.json();",
+         "pm.test(\"50.00 → cat 2.00 → sin volumen → cupón 7.20 → total 40.80\", () => {",
+         "    pm.expect(j.subtotalOriginal).to.eql(50);",
+         "    pm.expect(j.categoryDiscount).to.eql(2);",
+         "    pm.expect(j.volumeDiscount).to.eql(0);",
+         "    pm.expect(j.couponDiscount).to.eql(7.2);",
+         "    pm.expect(j.discountTotal).to.eql(9.2);",
+         "    pm.expect(j.effectiveDiscountPct).to.eql(18.4);",
+         "    pm.expect(j.total).to.eql(40.8);",
+         "});"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/cart/quote",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "cart",
+        "quote"
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"items\": [{\"productId\": 8, \"quantity\": 2}, {\"productId\": 2, \"quantity\": 1}],\n  \"couponCode\": \"WELCOME2026\"\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      }
+     }
+    },
+    {
+     "name": "HU2-05 · Código con espacios se normaliza",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+         "",
+         "pm.test(\"Se aplica WELCOME2026\", () => {",
+         "    pm.expect(pm.response.json().couponCode).to.eql(\"WELCOME2026\");",
+         "    pm.expect(pm.response.json().couponDiscount).to.eql(17.24);",
+         "});"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/cart/quote",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "cart",
+        "quote"
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"items\": [{\"productId\": 1, \"quantity\": 2}, {\"productId\": 9, \"quantity\": 1}],\n  \"couponCode\": \"  WELCOME2026  \"\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      }
+     }
+    },
+    {
+     "name": "HU2-06 · EXPIRED2025 → 422 fuera de vigencia",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test(\"Status 422\", () => pm.response.to.have.status(422));",
+         "",
+         "pm.test(\"Problem Details invalid-coupon\", () => {",
+         "    const j = pm.response.json();",
+         "    pm.expect(j.type).to.eql(\"urn:problem-type:invalid-coupon\");",
+         "    pm.expect(j.status).to.eql(422);",
+         "    pm.expect(j.detail).to.eql(\"El cupón 'EXPIRED2025' está fuera de vigencia\");",
+         "    pm.expect(j.couponCode).to.eql(\"EXPIRED2025\");",
+         "});"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/cart/quote",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "cart",
+        "quote"
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"items\": [{\"productId\": 1, \"quantity\": 2}, {\"productId\": 9, \"quantity\": 1}],\n  \"couponCode\": \"EXPIRED2025\"\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      }
+     }
+    },
+    {
+     "name": "HU2-07 · INACTIVE10 → 422 inactivo",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test(\"Status 422\", () => pm.response.to.have.status(422));",
+         "",
+         "pm.test(\"Problem Details invalid-coupon\", () => {",
+         "    const j = pm.response.json();",
+         "    pm.expect(j.type).to.eql(\"urn:problem-type:invalid-coupon\");",
+         "    pm.expect(j.status).to.eql(422);",
+         "    pm.expect(j.detail).to.eql(\"El cupón 'INACTIVE10' está inactivo\");",
+         "});"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/cart/quote",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "cart",
+        "quote"
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"items\": [{\"productId\": 1, \"quantity\": 2}, {\"productId\": 9, \"quantity\": 1}],\n  \"couponCode\": \"INACTIVE10\"\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      }
+     }
+    },
+    {
+     "name": "HU2-08 · Cupón inexistente → 422 no existe",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test(\"Status 422\", () => pm.response.to.have.status(422));",
+         "",
+         "pm.test(\"Problem Details invalid-coupon\", () => {",
+         "    const j = pm.response.json();",
+         "    pm.expect(j.type).to.eql(\"urn:problem-type:invalid-coupon\");",
+         "    pm.expect(j.status).to.eql(422);",
+         "    pm.expect(j.detail).to.eql(\"El cupón 'NOEXISTE' no existe\");",
+         "});"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/cart/quote",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "cart",
+        "quote"
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"items\": [{\"productId\": 1, \"quantity\": 2}, {\"productId\": 9, \"quantity\": 1}],\n  \"couponCode\": \"NOEXISTE\"\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      }
+     }
+    }
+   ]
+  },
+  {
+   "name": "HU3 · Checkout consistente",
+   "description": "POST /orders: stock, recálculo, persistencia y errores. Crea órdenes reales.",
+   "item": [
+    {
+     "name": "HU3-01 · Stock antes del checkout",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+         "",
+         "const byId = {};",
+         "pm.response.json().forEach(p => byId[p.id] = p.stock);",
+         "[\"1\", \"4\", \"7\", \"9\", \"10\", \"12\"].forEach(id => pm.collectionVariables.set(\"stock_\" + id, byId[id]));",
+         "pm.collectionVariables.set(\"qty7_excess\", byId[7] + 1);",
+         "",
+         "pm.test(\"Hay stock suficiente para las compras de esta carpeta\", () => {",
+         "    pm.expect(Number(pm.collectionVariables.get(\"stock_1\"))).to.be.at.least(4);",
+         "    pm.expect(Number(pm.collectionVariables.get(\"stock_9\"))).to.be.at.least(2);",
+         "});"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "GET",
+      "header": [],
+      "url": {
+       "raw": "{{baseUrl}}/products",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "products"
+       ]
+      }
+     }
+    },
+    {
+     "name": "HU3-02 · Checkout caso (c) con WELCOME2026 → 201",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+         "",
+         "const j = pm.response.json();",
+         "pm.test(\"Desglose exacto del caso (c)\", () => {",
+         "    pm.expect(j.subtotalOriginal).to.eql(130);",
+         "    pm.expect(j.categoryDiscount).to.eql(9);",
+         "    pm.expect(j.volumeDiscount).to.eql(6.05);",
+         "    pm.expect(j.couponDiscount).to.eql(17.24);",
+         "    pm.expect(j.capAdjustment).to.eql(0);",
+         "    pm.expect(j.discountTotal).to.eql(32.29);",
+         "    pm.expect(j.effectiveDiscountPct).to.eql(24.84);",
+         "    pm.expect(j.discountCapPct).to.eql(35);",
+         "    pm.expect(j.total).to.eql(97.71);",
+         "    pm.expect(j.currency).to.eql(\"USD\");",
+         "    pm.expect(j.couponCode).to.eql(\"WELCOME2026\");",
+         "    pm.expect(j.capApplied).to.eql(false);",
+         "    pm.expect(j.message).to.eql(null);",
+         "});",
+         "pm.test(\"Orden persistida con id y order_number ORD-<año>-NNNNNN\", () => {",
+         "    pm.expect(j.id).to.be.a(\"number\");",
+         "    pm.expect(j.orderNumber).to.match(new RegExp(\"^ORD-\" + new Date().getFullYear() + \"-\\\\d{6}$\"));",
+         "    pm.expect(j.createdAt).to.be.a(\"string\");",
+         "});",
+         "pm.test(\"Líneas con snapshot de nombre, categoría y precio\", () => {",
+         "    pm.expect(j.items).to.have.lengthOf(2);",
+         "    const a = j.items.find(i => i.productId === 1);",
+         "    pm.expect(a.id).to.be.a(\"number\");",
+         "    pm.expect(a.productName).to.eql(\"Audífonos Bluetooth\");",
+         "    pm.expect(a.categoryName).to.eql(\"Tecnología\");",
+         "    pm.expect(a.unitPrice).to.eql(45);",
+         "    pm.expect(a.quantity).to.eql(2);",
+         "    pm.expect(a.lineSubtotal).to.eql(90);",
+         "    pm.expect(a.categoryDiscount).to.eql(9);",
+         "    pm.expect(a.lineTotal).to.eql(81);",
+         "});",
+         "pm.collectionVariables.set(\"lastOrderNumber\", j.orderNumber);"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/orders",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "orders"
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"items\": [{\"productId\": 1, \"quantity\": 2}, {\"productId\": 9, \"quantity\": 1}],\n  \"couponCode\": \"WELCOME2026\"\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      }
+     }
+    },
+    {
+     "name": "HU3-03 · Stock decrementado (Audífonos −2, Libro −1)",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+         "",
+         "const products = pm.response.json();",
+         "pm.test(\"Audífonos: stock − 2\", () => pm.expect(products.find(p => p.id === 1).stock).to.eql(Number(pm.collectionVariables.get(\"stock_1\")) - 2));",
+         "pm.test(\"Libro: stock − 1\", () => pm.expect(products.find(p => p.id === 9).stock).to.eql(Number(pm.collectionVariables.get(\"stock_9\")) - 1));",
+         "",
+         "const byId = {};",
+         "pm.response.json().forEach(p => byId[p.id] = p.stock);",
+         "[\"1\", \"4\", \"7\", \"9\", \"10\", \"12\"].forEach(id => pm.collectionVariables.set(\"stock_\" + id, byId[id]));",
+         "pm.collectionVariables.set(\"qty7_excess\", byId[7] + 1);"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "GET",
+      "header": [],
+      "url": {
+       "raw": "{{baseUrl}}/products",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "products"
+       ]
+      }
+     }
+    },
+    {
+     "name": "HU3-04 · Stock insuficiente (sartenes) → 409",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test(\"Status 409\", () => pm.response.to.have.status(409));",
+         "",
+         "pm.test(\"Problem Details insufficient-stock\", () => {",
+         "    const j = pm.response.json();",
+         "    pm.expect(j.type).to.eql(\"urn:problem-type:insufficient-stock\");",
+         "    pm.expect(j.status).to.eql(409);",
+         "    pm.expect(j.productId).to.eql(7);",
+         "    pm.expect(j.requested).to.eql(Number(pm.collectionVariables.get(\"qty7_excess\")));",
+         "    pm.expect(j.available).to.eql(Number(pm.collectionVariables.get(\"stock_7\")));",
+         "});"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/orders",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "orders"
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"items\": [{\"productId\": 7, \"quantity\": {{qty7_excess}}}]\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      }
+     }
+    },
+    {
+     "name": "HU3-05 · Una línea sin stock → 409 todo o nada",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test(\"Status 409\", () => pm.response.to.have.status(409));",
+         "",
+         "pm.test(\"Problem Details insufficient-stock\", () => {",
+         "    const j = pm.response.json();",
+         "    pm.expect(j.type).to.eql(\"urn:problem-type:insufficient-stock\");",
+         "    pm.expect(j.status).to.eql(409);",
+         "    pm.expect(j.productId).to.eql(7);",
+         "});"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/orders",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "orders"
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"items\": [{\"productId\": 1, \"quantity\": 1}, {\"productId\": 7, \"quantity\": {{qty7_excess}}}]\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      }
+     }
+    },
+    {
+     "name": "HU3-06 · Stock sin cambios tras los rechazos",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+         "",
+         "const products = pm.response.json();",
+         "pm.test(\"Audífonos y sartenes conservan su stock\", () => {",
+         "    pm.expect(products.find(p => p.id === 1).stock).to.eql(Number(pm.collectionVariables.get(\"stock_1\")));",
+         "    pm.expect(products.find(p => p.id === 7).stock).to.eql(Number(pm.collectionVariables.get(\"stock_7\")));",
+         "});"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "GET",
+      "header": [],
+      "url": {
+       "raw": "{{baseUrl}}/products",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "products"
+       ]
+      }
+     }
+    },
+    {
+     "name": "HU3-07 · Cupón vencido → 422",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test(\"Status 422\", () => pm.response.to.have.status(422));",
+         "",
+         "pm.test(\"Problem Details invalid-coupon\", () => {",
+         "    const j = pm.response.json();",
+         "    pm.expect(j.type).to.eql(\"urn:problem-type:invalid-coupon\");",
+         "    pm.expect(j.status).to.eql(422);",
+         "});"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/orders",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "orders"
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"items\": [{\"productId\": 1, \"quantity\": 1}],\n  \"couponCode\": \"EXPIRED2025\"\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      }
+     }
+    },
+    {
+     "name": "HU3-08 · Producto inexistente → 404",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test(\"Status 404\", () => pm.response.to.have.status(404));",
+         "",
+         "pm.test(\"Problem Details resource-not-found\", () => {",
+         "    const j = pm.response.json();",
+         "    pm.expect(j.type).to.eql(\"urn:problem-type:resource-not-found\");",
+         "    pm.expect(j.status).to.eql(404);",
+         "    pm.expect(j.detail).to.include(\"999\");",
+         "});"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/orders",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "orders"
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"items\": [{\"productId\": 999, \"quantity\": 1}],\n  \"couponCode\": null\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      }
+     }
+    },
+    {
+     "name": "HU3-09 · Carrito vacío → 400",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test(\"Status 400\", () => pm.response.to.have.status(400));",
+         "",
+         "pm.test(\"Problem Details validation-error\", () => {",
+         "    const j = pm.response.json();",
+         "    pm.expect(j.type).to.eql(\"urn:problem-type:validation-error\");",
+         "    pm.expect(j.status).to.eql(400);",
+         "    pm.expect(j.errors).to.be.an(\"array\").that.is.not.empty;",
+         "});"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/orders",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "orders"
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"items\": []\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      }
+     }
+    },
+    {
+     "name": "HU3-10 · Cantidad 0 → 400",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test(\"Status 400\", () => pm.response.to.have.status(400));",
+         "",
+         "pm.test(\"Problem Details validation-error\", () => {",
+         "    const j = pm.response.json();",
+         "    pm.expect(j.type).to.eql(\"urn:problem-type:validation-error\");",
+         "    pm.expect(j.status).to.eql(400);",
+         "    pm.expect(j.errors.map(e => e.field)).to.include(\"items[0].quantity\");",
+         "});"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/orders",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "orders"
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"items\": [{\"productId\": 1, \"quantity\": 0}],\n  \"couponCode\": null\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      }
+     }
+    },
+    {
+     "name": "HU3-11 · Producto duplicado → 400",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test(\"Status 400\", () => pm.response.to.have.status(400));",
+         "",
+         "pm.test(\"Problem Details validation-error\", () => {",
+         "    const j = pm.response.json();",
+         "    pm.expect(j.type).to.eql(\"urn:problem-type:validation-error\");",
+         "    pm.expect(j.status).to.eql(400);",
+         "});"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/orders",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "orders"
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"items\": [{\"productId\": 1, \"quantity\": 1}, {\"productId\": 1, \"quantity\": 2}],\n  \"couponCode\": null\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      }
+     }
+    },
+    {
+     "name": "HU3-12 · Ignora montos del cliente y recalcula → 201",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+         "",
+         "const j = pm.response.json();",
+         "pm.test(\"Recalcula con precios de la BD: 130.00 → 97.71\", () => {",
+         "    pm.expect(j.subtotalOriginal).to.eql(130);",
+         "    pm.expect(j.total).to.eql(97.71);",
+         "});",
+         "pm.test(\"order_number consecutivo al anterior\", () => {",
+         "    const prev = pm.collectionVariables.get(\"lastOrderNumber\");",
+         "    const seq = s => parseInt(s.substring(s.lastIndexOf(\"-\") + 1), 10);",
+         "    pm.expect(seq(j.orderNumber)).to.eql(seq(prev) + 1);",
+         "});"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/orders",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "orders"
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"items\": [{\"productId\": 1, \"quantity\": 2, \"unitPrice\": 1.00}, {\"productId\": 9, \"quantity\": 1}],\n  \"couponCode\": \"WELCOME2026\",\n  \"total\": 1.00,\n  \"discountTotal\": 999.00\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      }
+     }
+    }
+   ]
+  },
+  {
+   "name": "HU4 · Alerta de límite de descuento (35 %)",
+   "description": "capApplied y mensaje en quote y checkout. HU4-06 crea una orden real.",
+   "item": [
+    {
+     "name": "HU4-01 · Caso (d) + TESTCAP30 → mensaje de límite",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+         "",
+         "const j = pm.response.json();",
+         "pm.test(\"Tope aplicado: capApplied = true y mensaje exacto de la HU4\", () => {",
+         "    pm.expect(j.capApplied).to.eql(true);",
+         "    pm.expect(j.message).to.eql(pm.collectionVariables.get(\"capMessage\"));",
+         "});",
+         "pm.test(\"Descuento truncado en 35 %: ajuste 13.16, total 208.00\", () => {",
+         "    pm.expect(j.subtotalOriginal).to.eql(320);",
+         "    pm.expect(j.categoryDiscount).to.eql(27);",
+         "    pm.expect(j.volumeDiscount).to.eql(14.65);",
+         "    pm.expect(j.couponDiscount).to.eql(83.51);",
+         "    pm.expect(j.capAdjustment).to.eql(13.16);",
+         "    pm.expect(j.discountTotal).to.eql(112);",
+         "    pm.expect(j.effectiveDiscountPct).to.eql(35);",
+         "    pm.expect(j.total).to.eql(208);",
+         "});"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/cart/quote",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "cart",
+        "quote"
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"items\": [{\"productId\": 4, \"quantity\": 1}, {\"productId\": 12, \"quantity\": 1}, {\"productId\": 10, \"quantity\": 2}],\n  \"couponCode\": \"TESTCAP30\"\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      }
+     }
+    },
+    {
+     "name": "HU4-02 · Recotizar → el mensaje persiste",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+         "",
+         "pm.test(\"Mismo mensaje en una nueva cotización\", () => pm.expect(pm.response.json().message).to.eql(pm.collectionVariables.get(\"capMessage\")));"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/cart/quote",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "cart",
+        "quote"
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"items\": [{\"productId\": 4, \"quantity\": 1}, {\"productId\": 12, \"quantity\": 1}, {\"productId\": 10, \"quantity\": 2}],\n  \"couponCode\": \"TESTCAP30\"\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      }
+     }
+    },
+    {
+     "name": "HU4-03 · Caso (c) + WELCOME2026 (24.84 %) → sin mensaje",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+         "",
+         "pm.test(\"Sin tope: capApplied = false y message = null\", () => {",
+         "    pm.expect(pm.response.json().capApplied).to.eql(false);",
+         "    pm.expect(pm.response.json().message).to.eql(null);",
+         "});"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/cart/quote",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "cart",
+        "quote"
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"items\": [{\"productId\": 1, \"quantity\": 2}, {\"productId\": 9, \"quantity\": 1}],\n  \"couponCode\": \"WELCOME2026\"\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      }
+     }
+    },
+    {
+     "name": "HU4-04 · Máximo con WELCOME2026 (27.33 %) → sin mensaje",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+         "",
+         "pm.test(\"Sin tope: capApplied = false y message = null\", () => {",
+         "    pm.expect(pm.response.json().capApplied).to.eql(false);",
+         "    pm.expect(pm.response.json().message).to.eql(null);",
+         "});",
+         "",
+         "pm.test(\"Efectivo 27.33 % (< 35 %)\", () => pm.expect(pm.response.json().effectiveDiscountPct).to.eql(27.33));"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/cart/quote",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "cart",
+        "quote"
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"items\": [{\"productId\": 4, \"quantity\": 1}, {\"productId\": 12, \"quantity\": 1}],\n  \"couponCode\": \"WELCOME2026\"\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      }
+     }
+    },
+    {
+     "name": "HU4-05 · Quitar el cupón → el mensaje desaparece",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+         "",
+         "pm.test(\"Sin tope: capApplied = false y message = null\", () => {",
+         "    pm.expect(pm.response.json().capApplied).to.eql(false);",
+         "    pm.expect(pm.response.json().message).to.eql(null);",
+         "});",
+         "",
+         "pm.test(\"Total sin cupón 278.35\", () => pm.expect(pm.response.json().total).to.eql(278.35));"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/cart/quote",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "cart",
+        "quote"
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"items\": [{\"productId\": 4, \"quantity\": 1}, {\"productId\": 12, \"quantity\": 1}, {\"productId\": 10, \"quantity\": 2}],\n  \"couponCode\": null\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      }
+     }
+    },
+    {
+     "name": "HU4-06 · Checkout caso (d) + TESTCAP30 → 201 con mensaje",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+         "",
+         "const j = pm.response.json();",
+         "pm.test(\"Tope aplicado: capApplied = true y mensaje exacto de la HU4\", () => {",
+         "    pm.expect(j.capApplied).to.eql(true);",
+         "    pm.expect(j.message).to.eql(pm.collectionVariables.get(\"capMessage\"));",
+         "});",
+         "pm.test(\"Descuento truncado en 35 %: ajuste 13.16, total 208.00\", () => {",
+         "    pm.expect(j.subtotalOriginal).to.eql(320);",
+         "    pm.expect(j.categoryDiscount).to.eql(27);",
+         "    pm.expect(j.volumeDiscount).to.eql(14.65);",
+         "    pm.expect(j.couponDiscount).to.eql(83.51);",
+         "    pm.expect(j.capAdjustment).to.eql(13.16);",
+         "    pm.expect(j.discountTotal).to.eql(112);",
+         "    pm.expect(j.effectiveDiscountPct).to.eql(35);",
+         "    pm.expect(j.total).to.eql(208);",
+         "});",
+         "",
+         "pm.test(\"Orden persistida\", () => pm.expect(pm.response.json().orderNumber).to.match(/^ORD-\\d{4}-\\d{6}$/));"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/orders",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "orders"
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"items\": [{\"productId\": 4, \"quantity\": 1}, {\"productId\": 12, \"quantity\": 1}, {\"productId\": 10, \"quantity\": 2}],\n  \"couponCode\": \"TESTCAP30\"\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      }
+     }
+    }
+   ]
+  }
+ ],
+ "variable": [
+  {
+   "key": "baseUrl",
+   "value": "http://localhost:8080/api/v1"
+  },
+  {
+   "key": "capMessage",
+   "value": "¡Enhorabuena! Has alcanzado el límite máximo de ahorro permitido (35%)"
+  },
+  {
+   "key": "stock_1",
+   "value": ""
+  },
+  {
+   "key": "stock_4",
+   "value": ""
+  },
+  {
+   "key": "stock_7",
+   "value": ""
+  },
+  {
+   "key": "stock_9",
+   "value": ""
+  },
+  {
+   "key": "stock_10",
+   "value": ""
+  },
+  {
+   "key": "stock_12",
+   "value": ""
+  },
+  {
+   "key": "qty7_excess",
+   "value": "3"
+  },
+  {
+   "key": "lastOrderNumber",
+   "value": ""
+  },
+  {
+   "key": "username",
+   "value": "admin"
+  },
+  {
+   "key": "password",
+   "value": "admin123"
+  },
+  {
+   "key": "token",
+   "value": ""
+  }
+ ],
+ "auth": {
+  "type": "bearer",
+  "bearer": [
+   {
+    "key": "token",
+    "value": "{{token}}",
+    "type": "string"
+   }
+  ]
+ }
+}
